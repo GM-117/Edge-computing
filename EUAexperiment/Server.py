@@ -5,12 +5,12 @@ class Server:
     # 设置服务器server_id
     server_id = 0
 
-    def __init__(self, latitude, longitude,i):
+    def __init__(self, latitude, longitude, i):
         self.latitude = latitude
         self.longitude = longitude
         # self.id = Server.server_id
         # Server.server_id = Server.server_id + 1
-        self.id=i
+        self.id = i
         self.coverage = random.randint(450, 750)
         self.capacity = []
 
