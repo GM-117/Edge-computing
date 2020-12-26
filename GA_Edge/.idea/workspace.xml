@@ -1,15 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="494dc747-88d2-4ac1-9c95-10b898656e3b" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../EUAexperiment/.idea/EUAexperiment.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../EUAexperiment/.idea/EUAexperiment.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../EUAexperiment/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../EUAexperiment/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../EUAexperiment/GaAllocation.py" beforeDir="false" afterPath="$PROJECT_DIR$/../EUAexperiment/GaAllocation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../EUAexperiment/User.py" beforeDir="false" afterPath="$PROJECT_DIR$/../EUAexperiment/User.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../EUAexperiment/opt.py" beforeDir="false" afterPath="$PROJECT_DIR$/../EUAexperiment/opt.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../EUAexperiment/test/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/../EUAexperiment/test/test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="494dc747-88d2-4ac1-9c95-10b898656e3b" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -21,8 +13,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/opt.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-550">
-              <caret line="8" column="53" selection-start-line="8" selection-start-column="43" selection-end-line="8" selection-end-column="53" />
+            <state relative-caret-position="250">
+              <caret line="40" column="44" lean-forward="true" selection-start-line="40" selection-start-column="8" selection-end-line="40" selection-end-column="44" />
             </state>
           </provider>
         </entry>
@@ -30,7 +22,7 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/GA_edge.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="250">
+            <state relative-caret-position="-1100">
               <caret line="10" column="36" selection-start-line="10" selection-start-column="26" selection-end-line="10" selection-end-column="36" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
@@ -117,16 +109,15 @@
       <option name="presentableId" value="Default" />
       <updated>1608553672104</updated>
       <workItem from="1608553674841" duration="735000" />
-      <workItem from="1608965896884" duration="4535000" />
+      <workItem from="1608965896884" duration="4803000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="5270000" />
+    <option name="totallyTimeSpent" value="5538000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.25266525" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -158,14 +149,14 @@
     <entry file="file://$PROJECT_DIR$/GA_tsp.py" />
     <entry file="file://$PROJECT_DIR$/opt.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-550">
-          <caret line="8" column="53" selection-start-line="8" selection-start-column="43" selection-end-line="8" selection-end-column="53" />
+        <state relative-caret-position="250">
+          <caret line="40" column="44" lean-forward="true" selection-start-line="40" selection-start-column="8" selection-end-line="40" selection-end-column="44" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/GA_edge.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="250">
+        <state relative-caret-position="-1100">
           <caret line="10" column="36" selection-start-line="10" selection-start-column="26" selection-end-line="10" selection-end-column="36" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
