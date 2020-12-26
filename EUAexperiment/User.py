@@ -37,7 +37,7 @@ class User:
                 'within_servers': self.within_servers}
 
     def key_info(self):
-        return {'id': self.id, 'workload': self.workload, 'within_servers': self.within_servers}
+        return {'id': self.id, 'workload': self.workload, 'within_servers': self.within_servers, 'ser_id': -1}
 
 if __name__ == '__main__':
     user = User(122, 233)

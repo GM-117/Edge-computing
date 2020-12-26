@@ -1,23 +1,21 @@
 import numpy as np
+import GaAllocation as ga
+import random
 
 
-def ranking(self):
-    self.FitV = -self.Y
-
-
-def selection(self, tourn_size=3):
-    aspirants_idx = np.random.randint(self.group_size, size=(self.group_size, tourn_size))
+def selection():
+    aspirants_idx = np.random.randint(ga.GA.USER_NUM, size=(ga.GA.GROUP_SIZE, ga.GA.USER_NUM // 10))
     # 分为group_size组。每组随机取tourn_size个
-    aspirants_values = self.FitV[aspirants_idx]
+    aspirants_values = ga.GA.fit_score[aspirants_idx]
     winner = aspirants_values.argmax(axis=1)  # 按适应度排序，取最高者下标
     sel_index = [aspirants_idx[i, j] for i, j in enumerate(winner)]  # 幸存者下标集合
-    self.Chrom = self.Chrom[sel_index, :]  # 幸存者集合
-    return self.Chrom
+    ga.get_new_generation(sel_index)
 
 
-def crossover(self):
-    for i in range(0, self.group_size, 2):  # 步长为2
-        Chrom1, Chrom2 = self.Chrom[i], self.Chrom[i + 1]
+def crossover():
+    for i in range(0, ga.GA.GROUP_SIZE, 2):  # 步长为2
+        individual1, individual2 = ga.GA.group[i], ga.GA.group[i + 1]
+
         cxpoint1, cxpoint2 = np.random.randint(0, self.chrom_size - 1, 2)  # 随机抽取两个基因位置
         if cxpoint1 >= cxpoint2:  # 左指针一定要小于右指针
             cxpoint1, cxpoint2 = cxpoint2, cxpoint1 + 1
@@ -33,19 +31,29 @@ def crossover(self):
             pos2_recorder[value1], pos2_recorder[value2] = j, pos2
 
         self.Chrom[i], self.Chrom[i + 1] = Chrom1, Chrom2
-    return self.Chrom
 
 
-def mutation(self):
-    for i in range(self.group_size):
-        if np.random.rand() < self.prob_mut:
-            self.Chrom[i] = reverse(self.Chrom[i])
-    return self.Chrom
+def mutation():
+    i = -1
+    for individual, individual_server in zip(ga.GA.group, ga.GA.server_group):
+        i += 1
+        if np.random.rand() > ga.GA.PROB_MUT:
+            continue
 
+        user_id = i
+        ser_id = random.randint(0, len(individual_server) - 1)
+        user_workload = individual[user_id]['workload']
+        ser_rem_cap = individual_server[ser_id]['capacity']
 
-def reverse(individual):
-    n1, n2 = np.random.randint(0, individual.shape[0] - 1, 2)  # 随机选择两个基因位
-    if n1 >= n2:
-        n1, n2 = n2, n1 + 1
-    individual[n1:n2] = individual[n1:n2][::-1]  # 翻转
-    return individual
+        # server 剩余资源充足
+        if (ser_rem_cap[0] >= user_workload[0]) and (ser_rem_cap[1] >= user_workload[1]) and (
+                ser_rem_cap[2] >= user_workload[2]) and (ser_rem_cap[3] >= user_workload[3]):
+            if ser_id not in individual[user_id]['within_servers']:
+                continue
+            old_ser_id = individual[user_id]['ser_id']
+            if old_ser_id != -1:  # 用户之前已被分配过一个server
+                individual_server[old_ser_id]['is_used'] = 0    # server重新标记为未使用
+                for i in range(4):
+                    individual_server[old_ser_id]['capacity'][i] += user_workload[i]
+            for i in range(4):
+                ser_rem_cap[i] -= user_workload[i]
