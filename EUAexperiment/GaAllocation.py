@@ -1,16 +1,15 @@
 import random
 import time
 import copy
-import math
 import numpy as np
 import opt
 
 
 class GA:
     USER_NUM = 0  # 用户（基因）个数
-    GROUP_SIZE = 50  # 种群个体数
-    MAX_GENERATION = 300  # 最大迭代次数
-    PROB_MUT = 0.1  # 变异概率
+    GROUP_SIZE = 30  # 种群个体数
+    MAX_GENERATION = 200  # 最大迭代次数
+    PROB_MUT = 0.5  # 变异概率
     fit_score = []  # 适应度得分
     group = []  # 种群，每一行代表一个个体，每一列代表一个user(基因)，每个值代表user分到的服务器，-1表示没分到
     server_group = []  # 服务器资源到种群的映射
@@ -24,6 +23,9 @@ def ga_allocation(user_list_par, server_list_par):
     GA.fit_score = [0] * GA.GROUP_SIZE
     GA.group = [[0 for col in range(len(user_list_par))] for row in range(GA.GROUP_SIZE)]
     GA.server_group = [[0 for col in range(len(user_list_par))] for row in range(GA.GROUP_SIZE)]
+    GA.best_score_list = []
+    GA.best_generation_individual = []
+    GA.best_generation_individual_server = []
 
     # 对程序运行时间进行记录
     st_tm = time.time()
@@ -70,9 +72,9 @@ def ga_allocation(user_list_par, server_list_par):
     return user_allo_prop, server_used_prop, run_time
 
 
-# 适应度得分函数，log(x) & -log(x)
+# 适应度得分函数，3x - y
 def get_score():
-    index = 0
+    fit_score = []
     for user_wait_allocated_list, ser_rem_cap_list in zip(GA.group, GA.server_group):
         # 已分配用户占所有用户的比例
         allocated_users = 0
@@ -87,12 +89,11 @@ def get_score():
         server_used_prop = float(used_servers) / float(len(ser_rem_cap_list))
 
         if user_allo_prop == 0 and server_used_prop == 0:
-            GA.fit_score[index] = 0
+            fit_score.append(0)
         else:
-            user_score = math.log(user_allo_prop, 10)
-            server_score = math.log(server_used_prop, 10)
-            GA.fit_score[index] = user_score - server_score
-        index += 1
+            fit_score.append(user_allo_prop * 5 - server_used_prop)
+
+    GA.fit_score = fit_score
 
 
 # 根据index获取结果参数
@@ -127,7 +128,9 @@ def init_group(user_list_par, server_list_par):
         server_info_list = []
         for server in server_list:
             server_info = server.key_info()
-            server_info_list.insert(server_info['id'], {'capacity': server_info['capacity'], 'is_used': 0})
+            server_info_list.insert(server_info['id'],
+                                    {'capacity': server_info['capacity'], 'rem_capacity': server_info['capacity'],
+                                     'is_used': 0})
         GA.server_group[i] = server_info_list
 
 
@@ -136,19 +139,23 @@ def init_allocate():
     for user_wait_allocated_list, server_info_list in zip(GA.group, GA.server_group):
         for user in user_wait_allocated_list:
             # 随机选择服务器
-            ser_id = random.randint(0, len(server_info_list) - 1)
-            ser_rem_cap = server_info_list[ser_id]['capacity']
-            user_workload = user['workload']
-            # 服务器满足需求时，直接分配
-            if (ser_rem_cap[0] >= user_workload[0]) and (ser_rem_cap[1] >= user_workload[1]) and (
-                    ser_rem_cap[2] >= user_workload[2]) and (ser_rem_cap[3] >= user_workload[3]):
-                if ser_id not in user['within_servers']:
-                    continue
-                user['is_allocated'] = 1
-                user['ser_id'] = ser_id
-                server_info_list[ser_id]['is_used'] = 1
-                for i in range(4):
-                    ser_rem_cap[i] -= user_workload[i]
+            # 从待分配用户列表中获得用户可选的服务器列表
+            within_servers = user['within_servers']
+            if len(within_servers) > 0:
+                # 从待分配用户列表中获得用户需要的负载
+                user_workload = user['workload']
+
+                # 从可选服务器中随机选择一个服务器
+                index = random.randint(0, len(within_servers) - 1)  # 包括左右端
+                ser_id = within_servers[index]
+                ser_rem_cap = server_info_list[ser_id]['capacity']
+                if (ser_rem_cap[0] >= user_workload[0]) and (ser_rem_cap[1] >= user_workload[1]) and (
+                        ser_rem_cap[2] >= user_workload[2]) and (ser_rem_cap[3] >= user_workload[3]):
+                    user['is_allocated'] = 1
+                    user['ser_id'] = ser_id
+                    server_info_list[ser_id]['is_used'] = 1
+                    for i in range(4):
+                        ser_rem_cap[i] -= user_workload[i]
 
 
 def get_new_generation(selected_idx):

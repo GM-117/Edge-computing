@@ -16,6 +16,9 @@ if __name__ == '__main__':
     random_user_all_list = []
     greed_user_all_list = []
     ga_user_all_list = []
+    random_server_all_list = []
+    greed_server_all_list = []
+    ga_server_all_list = []
     user_number_list = [32, 128, 256, 512]
 
     for user_number in user_number_list:
@@ -34,10 +37,21 @@ if __name__ == '__main__':
         greed_user_all_list.append(greed_user_allo)
         ga_user_all_list.append(ga_user_allo)
 
-    plt.plot(user_number_list, random_user_all_list, 'r-o', user_number_list, greed_user_all_list, 'b-^',
-             user_number_list, ga_user_all_list, 'g-s')
+        random_server_all_list.append(random_server_used)
+        greed_server_all_list.append(greed_server_used)
+        ga_server_all_list.append(ga_server_used)
+
+    fig, ax = plt.subplots(1, 2)
+    ax[0].plot(
+        user_number_list, random_user_all_list, 'r-o',
+        user_number_list, greed_user_all_list, 'b-^',
+        user_number_list, ga_user_all_list, 'g-s',
+    )
+    ax[1].plot(
+        user_number_list, random_server_all_list, 'r-o',
+        user_number_list, greed_server_all_list, 'b-^',
+        user_number_list, ga_server_all_list, 'g-s'
+    )
     plt.legend(('RANDOM', 'GREED', 'GA'), loc='best')
-    plt.xlabel('UserNumber')
-    plt.ylabel('AssignUser')
     plt.ylim(bottom=0)
     plt.show()
