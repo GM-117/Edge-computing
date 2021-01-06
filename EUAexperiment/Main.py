@@ -2,7 +2,7 @@
 
 from RandomAllocation import random_allocation
 from GreedAllocation import greed_allocation
-from GaAllocation import ga_allocation
+from GaAllocation import GaAllocate
 import random
 import matplotlib.pyplot as plt
 
@@ -31,7 +31,8 @@ if __name__ == '__main__':
         #     print(j.key_info())
         random_user_allo, random_server_used, random_runtime = random_allocation(user_list, server_list)
         greed_user_allo, greed_server_used, greed_runtime = greed_allocation(user_list, server_list)
-        ga_user_allo, ga_server_used, ga_runtime = ga_allocation(user_list, server_list)
+        ga = GaAllocate(user_list, server_list)
+        ga_user_allo, ga_server_used, ga_runtime = GaAllocate.train(ga)
 
         random_user_all_list.append(random_user_allo)
         greed_user_all_list.append(greed_user_allo)

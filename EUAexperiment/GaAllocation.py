@@ -2,170 +2,200 @@ import random
 import time
 import copy
 import numpy as np
-import opt
+from Server import Server
+from User import User
+
+chromosome_num = 100
+user_num = 0
+users = []
+server_num = 0
+servers = []
+# 初始交叉概率
+pC = 0.5
+# 初始变异概率
+pM = 0.05
+# 迭代轮数
+gen_num = 200
 
 
-class GA:
-    USER_NUM = 0  # 用户（基因）个数
-    GROUP_SIZE = 30  # 种群个体数
-    MAX_GENERATION = 200  # 最大迭代次数
-    PROB_MUT = 0.5  # 变异概率
-    fit_score = []  # 适应度得分
-    group = []  # 种群，每一行代表一个个体，每一列代表一个user(基因)，每个值代表user分到的服务器，-1表示没分到
-    server_group = []  # 服务器资源到种群的映射
-    best_score_list = []  # 每一代的最佳适应度得分
-    best_generation_individual = []  # 最佳个体user
-    best_generation_individual_server = []  # 最佳个体server
+def can_allocate(workload, capacity):
+    for i in range(len(workload)):
+        if capacity[i] < workload[i]:
+            return False
+    return True
 
 
-def ga_allocation(user_list_par, server_list_par):
-    GA.USER_NUM = len(user_list_par)
-    GA.fit_score = [0] * GA.GROUP_SIZE
-    GA.group = [[0 for col in range(len(user_list_par))] for row in range(GA.GROUP_SIZE)]
-    GA.server_group = [[0 for col in range(len(user_list_par))] for row in range(GA.GROUP_SIZE)]
-    GA.best_score_list = []
-    GA.best_generation_individual = []
-    GA.best_generation_individual_server = []
-
-    # 对程序运行时间进行记录
-    st_tm = time.time()
-
-    # 初始化种群，服务器资源
-    init_group(user_list_par, server_list_par)
-    # 为种群中每个user分配初始服务器
-    init_allocate()
-    # 获取适应度得分
-    get_score()
-
-    for i in range(GA.MAX_GENERATION):
-        old_group = copy.deepcopy(GA.group)
-        old_server_group = copy.deepcopy(GA.server_group)
-
-        opt.selection()  # 选择
-        opt.crossover()  # 交叉
-        opt.mutation()  # 变异
-
-        GA.group = GA.group + old_group
-        GA.server_group = GA.server_group + old_server_group
-        get_score()
-        selected_idx = np.argsort(GA.fit_score)[:GA.GROUP_SIZE]  # 按适应度排序后取出最佳的group_size个个体
-        selected_idx = selected_idx[-1:-1 - GA.GROUP_SIZE:-1]
-        get_new_generation(selected_idx)
-
-        best_index = np.array(GA.fit_score).argmax()
-        GA.best_score_list.append(GA.fit_score[best_index])
-        GA.best_generation_individual.append(GA.group[best_index])
-        GA.best_generation_individual_server.append(GA.server_group[best_index])
-
-    best_index = np.array(GA.best_score_list).argmax()
-    user_allo_prop, server_used_prop = get_param_by_index(GA.best_generation_individual[best_index],
-                                                          GA.best_generation_individual_server[best_index])
-    ed_tm = time.time()
-    print(GA.fit_score)
-    # 程序运行时间
-    run_time = ed_tm - st_tm
-    print('GaAllocation========================================')
-    print('分配用户占所有用户的比例：', user_allo_prop)
-    print('使用服务器占所有服务器的比例：', server_used_prop)
-    print('程序运行时间：', run_time)
-
-    return user_allo_prop, server_used_prop, run_time
+def do_allocate(workload, capacity):
+    for i in range(len(workload)):
+        capacity[i] -= workload[i]
 
 
-# 适应度得分函数，3x - y
-def get_score():
-    fit_score = []
-    for user_wait_allocated_list, ser_rem_cap_list in zip(GA.group, GA.server_group):
+class Chromosome:
+    """
+    染色体类
+    """
+
+    def __init__(self, genes=None):
+        if genes is None:
+            genes = []
+            for user_id in range(user_num):
+                user = users[user_id]
+                within_servers = user.within_servers
+                server_id = random.choice(within_servers)
+                genes.append(server_id)
+        self.genes = genes
+        self.servers = copy.deepcopy(servers)
+        self.user_allocated_prop = 0.0
+        self.server_used_prop = 1.0
+        self.fitness = 0.0
+        # 每个用户被分配到的服务器
+        self.user_allocate_list = [-1] * user_num
+        # 每个服务器分配到的用户数量
+        self.server_allocate_num = [0] * server_num
+        self.evaluate_fitness()
+
+    def allocate(self, allocated_user_id, allocated_server_id):
+        self.user_allocate_list[allocated_user_id] = allocated_server_id
+        self.server_allocate_num[allocated_server_id] += 1
+
+    def evaluate_fitness(self):
+        # 计算真实分配的用户表和服务器用量
+        for i in range(user_num):
+            user = users[i]
+            server_id = self.genes[i]
+            server = self.servers[server_id]
+            if can_allocate(user.workload, server.capacity):
+                self.allocate(i, server_id)
+                do_allocate(user.workload, server.capacity)
+
         # 已分配用户占所有用户的比例
-        allocated_users = 0
-        for user in user_wait_allocated_list:
-            allocated_users += user['is_allocated']
-        user_allo_prop = float(allocated_users) / float(len(user_wait_allocated_list))
+        allocated_user_num = user_num - self.user_allocate_list.count(-1)
+        self.user_allocated_prop = allocated_user_num / user_num
 
         # 已使用服务器占所有服务器比例
-        used_servers = 0
-        for server in ser_rem_cap_list:
-            used_servers += server['is_used']
-        server_used_prop = float(used_servers) / float(len(ser_rem_cap_list))
+        used_server_num = server_num - self.server_allocate_num.count(0)
+        self.server_used_prop = used_server_num / server_num
 
-        if user_allo_prop == 0 and server_used_prop == 0:
-            fit_score.append(0)
+        self.fitness = self.user_allocated_prop + 1 - self.server_used_prop
+
+
+class GaAllocate:
+    def __init__(self, users_in: [User], servers_in: [Server]):
+        self.sumFitness = 0.0
+        global users, servers, user_num, server_num
+        users = users_in
+        servers = servers_in
+        user_num = len(users)
+        server_num = len(servers)
+        self.generation_count = 0
+        self.best = Chromosome()
+        # 染色体：每个用户想要被分配的 服务器
+        self.chromosome_list = []
+        self.pCross = pC
+        self.pMutate = pM
+        # 迭代次数对应的解
+        self.user_result = []
+        self.server_result = []
+
+    def choose_one(self):
+        """
+        选择一个染色体
+        :return:
+        """
+        fitness_list = [each.fitness for each in self.chromosome_list]
+        sum_fitness = sum(fitness_list)
+        r = random.uniform(0, sum_fitness)
+        for chromosome in self.chromosome_list:
+            r -= chromosome.fitness
+            if r <= 0:
+                return chromosome
+
+    @staticmethod
+    def cross(parent1, parent2):
+        """
+        交叉，把第一个抽出一段基因，放到第二段的相应位置
+        :param parent1:
+        :param parent2:
+        :return:
+        """
+        index1 = random.randint(0, user_num - 2)
+        index2 = random.randint(index1, user_num - 1)
+        cross_genes = parent1.genes[index1:index2]
+        new_genes = parent2.genes[:]
+        new_genes[index1:index2] = cross_genes
+        return new_genes
+
+    @staticmethod
+    def mutate(genes):
+        # 随便改一个
+        new_genes = genes[:]
+        user_id = random.randint(0, user_num - 1)
+        within_servers = users[user_id].within_servers
+        server_id = random.choice(within_servers)
+        new_genes[user_id] = server_id
+        return new_genes
+
+    def generate_next_generation(self):
+        # 把这一代最好的留下来
+        new_list = [self.best]
+        for i in range(chromosome_num):
+            new_c = self.new_child()
+            self.chromosome_list.append(new_c)
+            if new_c.fitness > self.best.fitness:
+                self.best = new_c
+        self.chromosome_list = self.rank(self.chromosome_list)
+        self.chromosome_list = self.chromosome_list[0:chromosome_num]
+
+    def new_child(self):
+        parent1 = self.choose_one()
+        # 决定是否交叉
+        rate = random.random()
+        if rate < self.pCross:
+            parent2 = self.choose_one()
+            new_genes = self.cross(parent1, parent2)
         else:
-            fit_score.append(user_allo_prop * 5 - server_used_prop)
+            new_genes = copy.deepcopy(parent1.genes)
+        # 决定是否突变
+        rate = random.random()
+        if rate < self.pMutate:
+            new_genes = self.mutate(new_genes)
+        new_chromosome = Chromosome(new_genes)
+        return new_chromosome
 
-    GA.fit_score = fit_score
+    @staticmethod
+    def rank(chromosome_list):
+        new_list = []
+        for chromosome in chromosome_list:
+            for i, ch in enumerate(new_list):
+                if chromosome.fitness > ch.fitness:
+                    new_list.insert(i, chromosome)
+                    break
+        return new_list
 
+    def train(self):
+        # 记录程序运行时间
+        start_time = time.time()
 
-# 根据index获取结果参数
-def get_param_by_index(user_wait_allocated_list, ser_rem_cap_list):
-    # 已分配用户占所有用户的比例
-    allocated_users = 0
-    for user in user_wait_allocated_list:
-        allocated_users += user['is_allocated']
-    user_allo_prop = allocated_users / len(user_wait_allocated_list)
+        # 生成初代染色体
+        self.chromosome_list = [Chromosome() for _ in range(chromosome_num)]
+        self.generation_count = 0
+        while self.generation_count < gen_num:
+            self.user_result.append(self.best.user_allocated_prop)
+            self.server_result.append(self.best.server_used_prop)
+            self.generate_next_generation()
+            self.pCross += self.generation_count / 10000
+            self.pMutate += self.generation_count / 2000
+            self.generation_count += 1
 
-    # 已使用服务器占所有服务器比例
-    used_servers = 0
-    for server in ser_rem_cap_list:
-        used_servers += server['is_used']
-    server_used_prop = used_servers / len(ser_rem_cap_list)
+        # 记录程序结束时间
+        end_time = time.time()
 
-    return user_allo_prop, server_used_prop
+        # 程序运行时间
+        run_time = end_time - start_time
 
+        print('========GaAllocation========')
+        print('分配用户占所有用户的比例：', self.best.user_allocated_prop)
+        print('使用服务器占所有服务器的比例：', self.best.server_used_prop)
+        print('程序运行时间：', run_time)
 
-# 初始化种群，每一行都填充为所有user的集合
-def init_group(user_list_par, server_list_par):
-    for i in range(GA.GROUP_SIZE):
-        user_list = copy.deepcopy(user_list_par)
-        user_wait_allocated_list = []
-        for user in user_list:
-            user_info = user.key_info()
-            user_info['is_allocated'] = 0
-            user_wait_allocated_list.append(user_info)
-        GA.group[i] = user_wait_allocated_list
-
-        server_list = copy.deepcopy(server_list_par)
-        server_info_list = []
-        for server in server_list:
-            server_info = server.key_info()
-            server_info_list.insert(server_info['id'],
-                                    {'capacity': server_info['capacity'], 'rem_capacity': server_info['capacity'],
-                                     'is_used': 0})
-        GA.server_group[i] = server_info_list
-
-
-# 初始化分配，为种群中每个user分配初始服务器
-def init_allocate():
-    for user_wait_allocated_list, server_info_list in zip(GA.group, GA.server_group):
-        for user in user_wait_allocated_list:
-            # 随机选择服务器
-            # 从待分配用户列表中获得用户可选的服务器列表
-            within_servers = user['within_servers']
-            if len(within_servers) > 0:
-                # 从待分配用户列表中获得用户需要的负载
-                user_workload = user['workload']
-
-                # 从可选服务器中随机选择一个服务器
-                index = random.randint(0, len(within_servers) - 1)  # 包括左右端
-                ser_id = within_servers[index]
-                ser_rem_cap = server_info_list[ser_id]['capacity']
-                if (ser_rem_cap[0] >= user_workload[0]) and (ser_rem_cap[1] >= user_workload[1]) and (
-                        ser_rem_cap[2] >= user_workload[2]) and (ser_rem_cap[3] >= user_workload[3]):
-                    user['is_allocated'] = 1
-                    user['ser_id'] = ser_id
-                    server_info_list[ser_id]['is_used'] = 1
-                    for i in range(4):
-                        ser_rem_cap[i] -= user_workload[i]
-
-
-def get_new_generation(selected_idx):
-    new_group = []
-    new_server_group = []
-    new_fit_score = []
-    for index in selected_idx:
-        new_group.append(GA.group[index])
-        new_server_group.append(GA.server_group[index])
-        new_fit_score.append(GA.fit_score[index])
-    GA.group = new_group
-    GA.server_group = new_server_group
-    GA.fit_score = new_fit_score
+        return self.best.user_allocated_prop, self.best.server_used_prop, run_time
