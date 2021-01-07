@@ -121,7 +121,7 @@ class GaAllocate:
         index1 = random.randint(0, user_num - 2)
         index2 = random.randint(index1, user_num - 1)
         cross_genes = parent1.genes[index1:index2]
-        new_genes = parent2.genes[:]
+        new_genes = copy.deepcopy(parent2.genes[:])
         new_genes[index1:index2] = cross_genes
         return new_genes
 
@@ -136,8 +136,7 @@ class GaAllocate:
         return new_genes
 
     def generate_next_generation(self):
-        # 把这一代最好的留下来
-        new_list = [self.best]
+        # 锦标赛法生成下一代
         for i in range(chromosome_num):
             new_c = self.new_child()
             self.chromosome_list.append(new_c)
@@ -165,11 +164,13 @@ class GaAllocate:
     @staticmethod
     def rank(chromosome_list):
         new_list = []
+        new_list.insert(0, chromosome_list[0])
         for chromosome in chromosome_list:
             for i, ch in enumerate(new_list):
                 if chromosome.fitness > ch.fitness:
                     new_list.insert(i, chromosome)
                     break
+            new_list.append(chromosome)
         return new_list
 
     def train(self):
