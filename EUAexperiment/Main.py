@@ -1,58 +1,29 @@
-# from GAAllocation import ga_allocation
-
-from RandomAllocation import random_allocation
-from GreedAllocation import greed_allocation
 from GaAllocation import GaAllocate
-import random
+from NSGAIIAllocation import NSGAIIAllocate
 import matplotlib.pyplot as plt
 
 from Utils import Utils
 
 if __name__ == '__main__':
 
+    user_number = 512
     server_number = 125
     rate = 1
-    "====================根据用户数量画图================================"
-    random_user_all_list = []
-    greed_user_all_list = []
-    ga_user_all_list = []
-    random_server_all_list = []
-    greed_server_all_list = []
-    ga_server_all_list = []
-    user_number_list = [32, 128, 256, 512]
+    gen_num = 200
 
-    for user_number in user_number_list:
-        print("=======user_number==========", user_number)
-        utils = Utils(user_number, server_number, rate)
-        user_list, server_list = utils.init_data()
-        # for i in user_list:
-        #     print(i.key_info())
-        # for j in server_list:
-        #     print(j.key_info())
-        random_user_allo, random_server_used, random_runtime = random_allocation(user_list, server_list)
-        greed_user_allo, greed_server_used, greed_runtime = greed_allocation(user_list, server_list)
-        ga = GaAllocate(user_list, server_list)
-        ga_user_allo, ga_server_used, ga_runtime = GaAllocate.train(ga)
+    utils = Utils(user_number, server_number, rate)
+    user_list, server_list = utils.init_data()
 
-        random_user_all_list.append(random_user_allo)
-        greed_user_all_list.append(greed_user_allo)
-        ga_user_all_list.append(ga_user_allo)
+    nsgaii = NSGAIIAllocate(user_list, server_list)
+    nsgaii_user_allo, nsgaii_server_used, nsgaii_runtime = NSGAIIAllocate.train(nsgaii)
 
-        random_server_all_list.append(random_server_used)
-        greed_server_all_list.append(greed_server_used)
-        ga_server_all_list.append(ga_server_used)
+    ga = GaAllocate(user_list, server_list)
+    ga_user_allo, ga_server_used, ga_runtime = GaAllocate.train(ga)
 
-    fig, ax = plt.subplots(1, 2)
-    ax[0].plot(
-        user_number_list, random_user_all_list, 'r-o',
-        user_number_list, greed_user_all_list, 'b-^',
-        user_number_list, ga_user_all_list, 'g-s',
-    )
-    ax[1].plot(
-        user_number_list, random_server_all_list, 'r-o',
-        user_number_list, greed_server_all_list, 'b-^',
-        user_number_list, ga_server_all_list, 'g-s'
-    )
-    plt.legend(('RANDOM', 'GREED', 'GA'), loc='best')
-    plt.ylim(bottom=0)
-    plt.show()
+    fig = plt.figure()
+    plt.plot(list(range(gen_num)), nsgaii_user_allo, c='red', linestyle='--')
+    plt.plot(list(range(gen_num)), nsgaii_server_used, c='red')
+    plt.plot(list(range(gen_num)), ga_user_allo, c='blue', linestyle='--')
+    plt.plot(list(range(gen_num)), ga_server_used, c='blue')
+    plt.title("NSGAII vs GA")
+    fig.show()
