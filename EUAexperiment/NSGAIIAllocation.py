@@ -113,7 +113,7 @@ class Chromosome:
     def get_crowd(self, left_chrom, right_chrom):
         user_diff = abs(left_chrom.get_user_allo() - right_chrom.get_user_allo())
         server_diff = abs(left_chrom.get_server_allo() - right_chrom.get_server_allo())
-        return user_diff * server_diff
+        return user_diff ** 2 + server_diff ** 2 + self.fitness
 
 
 class NSGAIIAllocate:

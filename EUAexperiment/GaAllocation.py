@@ -113,19 +113,6 @@ class GaAllocate:
         self.user_result = []
         self.server_result = []
 
-    def choose_one(self):
-        """
-        选择一个染色体
-        :return:
-        """
-        fitness_list = [each.fitness for each in self.chromosome_list]
-        sum_fitness = sum(fitness_list)
-        r = random.uniform(0, sum_fitness)
-        for chromosome in self.chromosome_list:
-            r -= chromosome.fitness
-            if r <= 0:
-                return chromosome
-
     @staticmethod
     def cross(parent1, parent2):
         """
@@ -162,11 +149,11 @@ class GaAllocate:
         self.chromosome_list = self.chromosome_list[0:chromosome_num]
 
     def new_child(self):
-        parent1 = self.choose_one()
+        parent1 = random.choice(self.chromosome_list)
         # 决定是否交叉
         rate = random.random()
         if rate < self.pCross:
-            parent2 = self.choose_one()
+            parent2 = random.choice(self.chromosome_list)
             new_genes = self.cross(parent1, parent2)
         else:
             new_genes = copy_int(parent1.genes)
