@@ -92,7 +92,7 @@ class Chromosome:
         used_server_num = server_num - self.server_allocate_num.count(0)
         self.server_used_prop = used_server_num / server_num
 
-        self.fitness = self.user_allocated_prop + 1 - self.server_used_prop
+        self.fitness = self.user_allocated_prop * 1.5 + 1 - self.server_used_prop
 
 
 class GaAllocate:
