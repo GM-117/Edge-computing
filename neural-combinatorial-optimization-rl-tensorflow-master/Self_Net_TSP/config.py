@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import argparse
 import numpy as np
 
@@ -7,13 +7,13 @@ arg_lists = []
 
 
 def add_argument_group(name):
-  arg = parser.add_argument_group(name)
-  arg_lists.append(arg)
-  return arg
+    arg = parser.add_argument_group(name)
+    arg_lists.append(arg)
+    return arg
 
 
 def str2bool(v):
-  return v.lower() in ('true', '1')
+    return v.lower() in ('true', '1')
 
 
 # Network
@@ -42,40 +42,42 @@ train_arg.add_argument('--temperature', type=float, default=3.0, help='pointer_n
 train_arg.add_argument('--C', type=float, default=10.0, help='pointer_net tan clipping')
 
 # Misc
-misc_arg = add_argument_group('User options') #####################################################
+misc_arg = add_argument_group('User options')  #####################################################
 
-misc_arg.add_argument('--inference_mode', type=str2bool, default=True, help='switch to inference mode when model is trained') 
+misc_arg.add_argument('--inference_mode', type=str2bool, default=True,
+                      help='switch to inference mode when model is trained')
 misc_arg.add_argument('--restore_model', type=str2bool, default=True, help='whether or not model is retrieved')
 
 misc_arg.add_argument('--save_to', type=str, default='20/model', help='saver sub directory')
 misc_arg.add_argument('--restore_from', type=str, default='20/model', help='loader sub directory')  ###
-misc_arg.add_argument('--log_dir', type=str, default='summary/20/repo', help='summary writer log directory') 
+misc_arg.add_argument('--log_dir', type=str, default='summary/20/repo', help='summary writer log directory')
 
 
 def get_config():
-  config, unparsed = parser.parse_known_args()
-  return config, unparsed
+    config, unparsed = parser.parse_known_args()
+    return config, unparsed
 
 
 def print_config():
-  config, _ = get_config()
-  print('\n')
-  print('Data Config:')
-  print('* Batch size:',config.batch_size)
-  print('* Sequence length:',config.max_length)
-  print('* City coordinates:',config.input_dimension)
-  print('\n')
-  print('Network Config:')
-  print('* Restored model:',config.restore_model)
-  print('* Actor hidden_dim (embed / num neurons):',config.hidden_dim)
-  print('* Actor tan clipping:',config.C)
-  print('\n')
-  if config.inference_mode==False:
-  	print('Training Config:')
-  	print('* Nb epoch:',config.nb_epoch)
-  	print('* Temperature:',config.temperature)
-  	print('* Actor learning rate (init,decay_step,decay_rate):',config.lr1_start,config.lr1_decay_step,config.lr1_decay_rate)
-  else:
-  	print('Testing Config:')
-  print('* Summary writer log dir:',config.log_dir)
-  print('\n')
+    config, _ = get_config()
+    print('\n')
+    print('Data Config:')
+    print('* Batch size:', config.batch_size)
+    print('* Sequence length:', config.max_length)
+    print('* City coordinates:', config.input_dimension)
+    print('\n')
+    print('Network Config:')
+    print('* Restored model:', config.restore_model)
+    print('* Actor hidden_dim (embed / num neurons):', config.hidden_dim)
+    print('* Actor tan clipping:', config.C)
+    print('\n')
+    if config.inference_mode == False:
+        print('Training Config:')
+        print('* Nb epoch:', config.nb_epoch)
+        print('* Temperature:', config.temperature)
+        print('* Actor learning rate (init,decay_step,decay_rate):', config.lr1_start, config.lr1_decay_step,
+              config.lr1_decay_rate)
+    else:
+        print('Testing Config:')
+    print('* Summary writer log dir:', config.log_dir)
+    print('\n')

@@ -58,10 +58,11 @@ def main():
                 # Get feed dict
                 input_batch = training_set.train_batch(actor.batch_size, actor.max_length, actor.input_dimension)
                 feed = {actor.input_: input_batch}
-
                 # Forward pass & train step
-                summary, base_op, train_step1, train_step2 = sess.run(
-                    [actor.merged, actor.base_op, actor.train_step1, actor.train_step2], feed_dict=feed)
+                summary, permutation, distances = sess.run([actor.merged, actor.positions, actor.distances],
+                                                           feed_dict=feed)
+                print(' Permutation \n', permutation)
+                print(' Tour length \n', distances)
 
                 if i % 100 == 0:
                     writer.add_summary(summary, i)

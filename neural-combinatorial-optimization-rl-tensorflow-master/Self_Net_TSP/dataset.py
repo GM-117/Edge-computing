@@ -11,7 +11,7 @@ from sklearn.decomposition import PCA
 class DataGenerator(object):
 
     # Initialize a DataGenerator
-    def __init__(self,solver):
+    def __init__(self, solver):
         self.solver=solver  # reference solver for TSP (Google_OR_tools)
 
 
@@ -42,7 +42,6 @@ class DataGenerator(object):
 
         # Scale to [0,1[
         input_ = sequence/100
-
         if test_mode == True:
             return input_, seq
         else:

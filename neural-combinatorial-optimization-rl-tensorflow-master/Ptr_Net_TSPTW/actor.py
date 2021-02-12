@@ -109,8 +109,10 @@ class Actor(object):
             self.ordered_input_ = tf.transpose(self.ordered_input_,[2,1,0]) # [batch size, seq length +1 , features] to [features, seq length +1, batch_size]   Rq: +1 because end = start = depot
 
             # Ordered coordinates
+            # 城市x坐标
             ordered_x_ = self.ordered_input_[0] # [seq length +1, batch_size]
             delta_x2 = tf.transpose(tf.square(ordered_x_[1:]-ordered_x_[:-1]),[1,0]) # [batch_size, seq length]        delta_x**2
+            # 城市y坐标
             ordered_y_ = self.ordered_input_[1] # [seq length +1, batch_size]
             delta_y2 = tf.transpose(tf.square(ordered_y_[1:]-ordered_y_[:-1]),[1,0]) # [batch_size, seq length]        delta_y**2
 
@@ -118,13 +120,17 @@ class Actor(object):
             self.ordered_tw_mean_ = tf.transpose(self.ordered_input_[2][:-1],[1,0]) # [seq length, batch_size] to [batch_size, seq length]
             self.ordered_tw_width_ = tf.transpose(self.ordered_input_[3][:-1],[1,0]) # [seq length, batch_size] to [batch_size, seq length]
 
+
+            # 时间窗开启时间
             self.ordered_tw_open_ = self.ordered_tw_mean_ - self.ordered_tw_width_/2
+            # 时间窗关闭时间
             self.ordered_tw_close_ = self.ordered_tw_mean_ + self.ordered_tw_width_/2
 
         with tf.name_scope('environment'):
 
             # Get tour length (euclidean distance)
             inter_city_distances = tf.sqrt(delta_x2+delta_y2) # sqrt(delta_x**2 + delta_y**2) this is the euclidean distance between each city: depot --> ... ---> depot      [batch_size, seq length]
+            # 总路程
             self.distances = tf.reduce_sum(inter_city_distances, axis=1) # [batch_size]
             variable_summaries('tour_length',self.distances, with_max_min = True)
 
@@ -142,10 +148,12 @@ class Actor(object):
 
             # Define delay from lateness
             self.delay = tf.maximum(self.constrained_delivery_time-self.ordered_tw_close_-0.0001, tf.zeros([self.batch_size,self.max_length+1])) # Delay perceived by the client (doesn't care if the deliver waits..)
+            # 计算延误的城市有多少个
             self.delay = tf.count_nonzero(self.delay,1)
             variable_summaries('delay',tf.cast(self.delay,tf.float32), with_max_min = True)
 
             # Define reward from tour length & delay
+            # 定义reward函数
             self.reward = tf.cast(self.distances,tf.float32)+self.beta*tf.sqrt(tf.cast(self.delay,tf.float32))
             variable_summaries('reward',self.reward, with_max_min = True)
 
@@ -162,9 +170,11 @@ class Actor(object):
                 # Optimizer
                 self.opt1 = tf.train.AdamOptimizer(learning_rate=self.lr1,beta1=0.9,beta2=0.99, epsilon=0.0000001)
                 # Discounted reward
+                # 实际reward和预测的reward的差值
                 self.reward_baseline = tf.stop_gradient(self.reward - self.critic.predictions) # [Batch size, 1]
                 variable_summaries('reward_baseline',self.reward_baseline, with_max_min = True)
                 # Loss
+                # 最小化这个差值
                 self.loss1 = tf.reduce_mean(self.reward_baseline*self.log_softmax,0)
                 tf.summary.scalar('loss1', self.loss1)
                 # Minimize step
