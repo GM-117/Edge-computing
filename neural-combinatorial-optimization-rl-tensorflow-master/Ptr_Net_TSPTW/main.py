@@ -6,9 +6,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from dataset import DataGenerator
-from actor import Actor
-from config import get_config, print_config
+from Ptr_Net_TSPTW.dataset import DataGenerator
+from Ptr_Net_TSPTW.actor import Actor
+from Ptr_Net_TSPTW.config import get_config, print_config
 
 
 # Model: Decoder inputs = Encoder outputs Critic design (state value function approximator) = RNN encoder last hidden
@@ -59,6 +59,7 @@ def main():
             for i in tqdm(range(config.nb_epoch)):
                 # Get feed dict
                 input_batch = training_set.train_batch()
+                print(input_batch)
                 feed = {actor.input_: input_batch}
 
                 # Forward pass & train step
@@ -138,7 +139,7 @@ def main():
                     predictions_2opt.append(two_opt_length_ / 100)
 
                 # print, plot corresponding tour
-                if delay[j]>0:  # delay[j]>0:
+                if delay[j] > 0:  # delay[j]>0:
                     # training_set.visualize_sampling(permutations)
                     print('\n Model tour length: ', training_set.get_tour_length(or_sequence[best_permutation]) / 100,
                           '(delay:', delay[j], ')')

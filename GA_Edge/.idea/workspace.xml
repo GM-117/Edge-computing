@@ -5,6 +5,7 @@
       <change beforePath="$PROJECT_DIR$/../EUAexperiment/GaAllocation.py" beforeDir="false" afterPath="$PROJECT_DIR$/../EUAexperiment/GaAllocation.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../EUAexperiment/Main.py" beforeDir="false" afterPath="$PROJECT_DIR$/../EUAexperiment/Main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../EUAexperiment/opt.py" beforeDir="false" afterPath="$PROJECT_DIR$/../EUAexperiment/opt.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../EUAexperiment/test/test.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -124,7 +125,6 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="7" />
-    <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2553305" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />

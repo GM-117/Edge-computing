@@ -71,7 +71,7 @@ class Actor(object):
             self.ptr = Pointer_decoder(encoder_output, self.config)
             self.positions, self.log_softmax = self.ptr.loop_decode()
             # TODO 输出结果
-            print(self.positions)
+            # print(self.positions)
             variable_summaries('log_softmax', self.log_softmax, with_max_min=True)
 
     def build_critic(self):
