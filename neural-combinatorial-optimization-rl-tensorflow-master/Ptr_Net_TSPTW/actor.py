@@ -141,15 +141,20 @@ class Actor(object):
             # 带权
             task_priority_weight = tf.multiply(task_priority, self.weight_list)
             # 求和
-            task_priority_sum = tf.reduce_sum(task_priority_weight, axis=0) # [batch_size]
+            task_priority_sum = tf.reduce_sum(task_priority_weight, axis=0)  # [batch_size]
 
             # 计算超时率
-            ns = 0
-            t = [0 in range(self.max_length)]
-            for to, tu in zip(tf.unstack(timeout, axis=1), tf.unstack(time_use, axis=1)):
-                print(to)
-                print(tu)
-
+            ns = tf.constant([0 for i in range(self.batch_size)], dtype=tf.float32, shape=[1, self.batch_size])
+            t_sum = tf.constant([0 for i in range(self.batch_size)], dtype=tf.float32, shape=[1, self.batch_size])
+            for to, tu in zip(tf.unstack(timeout), tf.unstack(time_use)):
+                t_sum = tf.add(t_sum, tu)
+                ts = tf.maximum(t_sum - to, tf.zeros([1, self.batch_size], dtype=tf.float32))
+                temp = tf.count_nonzero(ts, axis=0, dtype=tf.float32)
+                # 统计超时数
+                ns = tf.add(ns, temp)
+            # 计算超时率
+            ns_prob = tf.divide(ns, self.max_length)
+            ns_prob = tf.reshape(ns_prob, [self.batch_size])
 
             inter_city_distances = tf.sqrt(
                 delta_x2 + delta_y2)  # sqrt(delta_x**2 + delta_y**2) this is the euclidean distance between each city: depot --> ... ---> depot      [batch_size, seq length]
