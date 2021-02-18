@@ -17,7 +17,7 @@ def variable_summaries(name, var, with_max_min=False):
         with tf.name_scope('stddev'):
             stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
         tf.summary.scalar('stddev', stddev)
-        if with_max_min == True:
+        if with_max_min:
             tf.summary.scalar('max', tf.reduce_max(var))
             tf.summary.scalar('min', tf.reduce_min(var))
 
@@ -29,17 +29,18 @@ class Actor(object):
 
         # Data config
         self.batch_size = config.batch_size  # batch size
-        self.max_length = config.max_length  # input sequence length (number of cities)
-        self.input_dimension = config.input_dimension  # dimension of a city (coordinates)
-        self.speed = config.speed  # agent's speed
-
+        self.max_length = config.max_length  # input sequence length (number of tasks)
+        self.input_dimension = config.input_dimension  # dimension of a task (coordinates)
+        # TODO speed
         # Network config
         self.input_embed = config.input_embed  # dimension of embedding space
         self.num_neurons = config.hidden_dim  # dimension of hidden states (LSTM cell)
         self.initializer = tf.contrib.layers.xavier_initializer()  # variables initializer
 
         # Reward config
-        self.beta = config.beta  # penalty for constraint
+        self.alpha = config.alpha
+        self.beta = config.beta
+        self.gama = config.gama
 
         # Training config (actor)
         self.global_step = tf.Variable(0, trainable=False, name="global_step")  # global step
@@ -57,6 +58,7 @@ class Actor(object):
         # Tensor block holding the input sequences [Batch Size, Sequence Length, Features]
         self.input_ = tf.placeholder(tf.float32, [self.batch_size, self.max_length, self.input_dimension],
                                      name="input_raw")  # +1 for depot
+        self.weight_list = self.build_weight_list()
 
         self.build_permutation()
         self.build_critic()
@@ -64,12 +66,18 @@ class Actor(object):
         self.build_optim()
         self.merged = tf.summary.merge_all()
 
+    def build_weight_list(self):
+        weight_list = []
+        for idx in range(self.max_length):
+            weight_list.append(1 - (idx / self.max_length))
+        return tf.constant(weight_list, shape=[self.max_length, 1])
+
     def build_permutation(self):
         with tf.variable_scope("encoder"):
             with tf.variable_scope("embedding"):
                 # Embed input sequence
                 W_embed = tf.get_variable("weights", [1, self.input_dimension, self.input_embed],
-                                          initializer=self.initializer)  # +2 for TW feat. here too
+                                          initializer=self.initializer)
                 embedded_input = tf.nn.conv1d(self.input_, W_embed, 1, "VALID", name="embedded_input")
                 # Batch Normalization
                 embedded_input = tf.layers.batch_normalization(embedded_input, axis=2, training=self.is_training,
@@ -93,41 +101,56 @@ class Actor(object):
             # Critic predicts reward (parametric baseline for REINFORCE)
             self.critic = Critic(self.config)
             self.critic.predict_rewards(self.input_)
+            # 得出self.critic.predictions
             variable_summaries('predictions', self.critic.predictions, with_max_min=True)
 
     def build_reward(self):
         with tf.name_scope('permutations'):
             # Reorder input % tour
+            # [256, 20, 2]
             self.permutations = tf.stack(
-                [tf.tile(tf.expand_dims(tf.range(self.batch_size, dtype=tf.int32), 1), [1, self.max_length + 2]),
-                 self.positions], 2)
+                [
+                    tf.tile(tf.expand_dims(tf.range(self.batch_size, dtype=tf.int32), 1), [1, self.max_length]),
+                    self.positions
+                ],
+                2
+            )
             self.ordered_input_ = tf.gather_nd(self.input_, self.permutations)
             self.ordered_input_ = tf.transpose(self.ordered_input_, [2, 1,
-                                                                     0])  # [batch size, seq length +1 , features] to [features, seq length +1, batch_size]   Rq: +1 because end = start = depot
+                                                                     0])  # [batch size, seq length , features] to [features, seq length, batch_size]   Rq: +1 because end = start = depot
 
-            # Ordered coordinates
-            # 城市x坐标
-            ordered_x_ = self.ordered_input_[0]  # [seq length +1, batch_size]
-            delta_x2 = tf.transpose(tf.square(ordered_x_[1:] - ordered_x_[:-1]),
-                                    [1, 0])  # [batch_size, seq length]        delta_x**2
-            # 城市y坐标
-            ordered_y_ = self.ordered_input_[1]  # [seq length +1, batch_size]
-            delta_y2 = tf.transpose(tf.square(ordered_y_[1:] - ordered_y_[:-1]),
-                                    [1, 0])  # [batch_size, seq length]        delta_y**2
-
-            # Ordered TW constraints
-            self.ordered_tw_mean_ = tf.transpose(self.ordered_input_[2][:-1],
-                                                 [1, 0])  # [seq length, batch_size] to [batch_size, seq length]
-            self.ordered_tw_width_ = tf.transpose(self.ordered_input_[3][:-1],
-                                                  [1, 0])  # [seq length, batch_size] to [batch_size, seq length]
-
-            # 时间窗开启时间
-            self.ordered_tw_open_ = self.ordered_tw_mean_ - self.ordered_tw_width_ / 2
-            # 时间窗关闭时间
-            self.ordered_tw_close_ = self.ordered_tw_mean_ + self.ordered_tw_width_ / 2
+            # 服务器利用率 θ
+            server_ratio = self.ordered_input_[0]
+            # 优先级 λ
+            task_priority = self.ordered_input_[1]
+            # 超时时间 t
+            timeout = self.ordered_input_[2]
+            # 任务所需时间 ts
+            time_use = self.ordered_input_[3]
 
         with tf.name_scope('environment'):
-            # Get tour length (euclidean distance)
+            # 计算带权服务器利用率
+            server_ratio_weight = tf.multiply(server_ratio, self.weight_list)
+            # 求和
+            server_ratio_sum = tf.reduce_sum(server_ratio_weight, axis=0)  # [batch_size]
+
+            # 求每组样本的λ最大值
+            priority_max = tf.reduce_max(task_priority, axis=0)
+            # 归一化
+            task_priority = tf.divide(task_priority, priority_max)
+            # 带权
+            task_priority_weight = tf.multiply(task_priority, self.weight_list)
+            # 求和
+            task_priority_sum = tf.reduce_sum(task_priority_weight, axis=0) # [batch_size]
+
+            # 计算超时率
+            ns = 0
+            t = [0 in range(self.max_length)]
+            for to, tu in zip(tf.unstack(timeout, axis=1), tf.unstack(time_use, axis=1)):
+                print(to)
+                print(tu)
+
+
             inter_city_distances = tf.sqrt(
                 delta_x2 + delta_y2)  # sqrt(delta_x**2 + delta_y**2) this is the euclidean distance between each city: depot --> ... ---> depot      [batch_size, seq length]
             # 总路程
@@ -155,7 +178,6 @@ class Actor(object):
                  self.max_length + 1]))  # Delay perceived by the client (doesn't care if the deliver waits..)
             # 计算延误的城市有多少个
             self.delay = tf.count_nonzero(self.delay, 1)
-            print(self.delay)
             variable_summaries('delay', tf.cast(self.delay, tf.float32), with_max_min=True)
 
             # Define reward from tour length & delay
