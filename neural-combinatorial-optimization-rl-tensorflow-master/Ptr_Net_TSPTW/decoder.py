@@ -63,7 +63,7 @@ class Pointer_decoder(object):
         ########################################
 
         # Start from depot
-        self.depot_position = tf.constant(self.seq_length, shape=[batch_size])
+        self.depot_position = tf.constant(self.seq_length - 1, shape=[batch_size])
         self.positions.append(self.depot_position)
 
         # Keep track of current city

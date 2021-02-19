@@ -31,7 +31,7 @@ class Actor(object):
         self.batch_size = config.batch_size  # batch size
         self.max_length = config.max_length  # input sequence length (number of tasks)
         self.input_dimension = config.input_dimension  # dimension of a task (coordinates)
-        # TODO speed
+
         # Network config
         self.input_embed = config.input_embed  # dimension of embedding space
         self.num_neurons = config.hidden_dim  # dimension of hidden states (LSTM cell)
@@ -57,7 +57,7 @@ class Actor(object):
 
         # Tensor block holding the input sequences [Batch Size, Sequence Length, Features]
         self.input_ = tf.placeholder(tf.float32, [self.batch_size, self.max_length, self.input_dimension],
-                                     name="input_raw")  # +1 for depot
+                                     name="input_raw")
         self.weight_list = self.build_weight_list()
 
         self.build_permutation()
@@ -115,9 +115,10 @@ class Actor(object):
                 ],
                 2
             )
+            # 对input排序
             self.ordered_input_ = tf.gather_nd(self.input_, self.permutations)
             self.ordered_input_ = tf.transpose(self.ordered_input_, [2, 1,
-                                                                     0])  # [batch size, seq length , features] to [features, seq length, batch_size]   Rq: +1 because end = start = depot
+                                                                     0])  # [batch size, seq length , features] to [features, seq length, batch_size]
 
             # 服务器利用率 θ
             server_ratio = self.ordered_input_[0]
@@ -132,7 +133,7 @@ class Actor(object):
             # 计算带权服务器利用率
             server_ratio_weight = tf.multiply(server_ratio, self.weight_list)
             # 求和
-            server_ratio_sum = tf.reduce_sum(server_ratio_weight, axis=0)  # [batch_size]
+            self.server_ratio_sum = tf.reduce_sum(server_ratio_weight, axis=0)  # [batch_size]
 
             # 求每组样本的λ最大值
             priority_max = tf.reduce_max(task_priority, axis=0)
@@ -141,7 +142,7 @@ class Actor(object):
             # 带权
             task_priority_weight = tf.multiply(task_priority, self.weight_list)
             # 求和
-            task_priority_sum = tf.reduce_sum(task_priority_weight, axis=0)  # [batch_size]
+            self.task_priority_sum = tf.reduce_sum(task_priority_weight, axis=0)  # [batch_size]
 
             # 计算超时率
             ns = tf.constant([0 for i in range(self.batch_size)], dtype=tf.float32, shape=[1, self.batch_size])
@@ -154,40 +155,12 @@ class Actor(object):
                 ns = tf.add(ns, temp)
             # 计算超时率
             ns_prob = tf.divide(ns, self.max_length)
-            ns_prob = tf.reshape(ns_prob, [self.batch_size])
+            self.ns_prob = tf.reshape(ns_prob, [self.batch_size])
 
-            inter_city_distances = tf.sqrt(
-                delta_x2 + delta_y2)  # sqrt(delta_x**2 + delta_y**2) this is the euclidean distance between each city: depot --> ... ---> depot      [batch_size, seq length]
-            # 总路程
-            self.distances = tf.reduce_sum(inter_city_distances, axis=1)  # [batch_size]
-            variable_summaries('tour_length', self.distances, with_max_min=True)
-
-            # Get time at each city if no constraint
-            self.time_at_cities = (1 / self.speed) * tf.cumsum(inter_city_distances, axis=1,
-                                                               exclusive=True) - 10  # [batch size, seq length]          # Rq: -10 to be on time at depot (t_mean centered)
-
-            # Apply constraints to each city
-            self.constrained_delivery_time = []
-            cumul_lateness = 0
-            for time_open, delivery_time in zip(tf.unstack(self.ordered_tw_open_, axis=1),
-                                                tf.unstack(self.time_at_cities, axis=1)):  # Unstack % seq length
-                delayed_delivery = delivery_time + cumul_lateness
-                cumul_lateness += tf.maximum(time_open - delayed_delivery, tf.zeros(
-                    [self.batch_size]))  # if you have to wait... wait (impacts further states)
-                self.constrained_delivery_time.append(delivery_time + cumul_lateness)
-            self.constrained_delivery_time = tf.stack(self.constrained_delivery_time, 1)
-
-            # Define delay from lateness
-            self.delay = tf.maximum(self.constrained_delivery_time - self.ordered_tw_close_ - 0.0001, tf.zeros(
-                [self.batch_size,
-                 self.max_length + 1]))  # Delay perceived by the client (doesn't care if the deliver waits..)
-            # 计算延误的城市有多少个
-            self.delay = tf.count_nonzero(self.delay, 1)
-            variable_summaries('delay', tf.cast(self.delay, tf.float32), with_max_min=True)
-
-            # Define reward from tour length & delay
             # 定义reward函数
-            self.reward = tf.cast(self.distances, tf.float32) + self.beta * tf.sqrt(tf.cast(self.delay, tf.float32))
+            self.reward = self.alpha * tf.cast(self.server_ratio_sum, tf.float32) + \
+                          self.beta * tf.cast(self.task_priority_sum, tf.float32) + \
+                          self.gama * tf.cast(self.ns_prob, tf.float32)
             variable_summaries('reward', self.reward, with_max_min=True)
 
     def build_optim(self):

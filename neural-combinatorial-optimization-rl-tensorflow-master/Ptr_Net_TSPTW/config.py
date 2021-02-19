@@ -34,9 +34,9 @@ train_arg.add_argument('--lr1_start', type=float, default=0.001, help='actor lea
 train_arg.add_argument('--lr1_decay_step', type=int, default=5000, help='lr1 decay step')
 train_arg.add_argument('--lr1_decay_rate', type=float, default=0.96, help='lr1 decay rate')
 
-train_arg.add_argument('--alpha', type=int, default=0.2, help='weight for load impact')
+train_arg.add_argument('--alpha', type=int, default=0.3, help='weight for load impact')
 train_arg.add_argument('--beta', type=int, default=0.3, help='weight for priority impact')
-train_arg.add_argument('--gama', type=int, default=0.5, help='weight for timeout impact')
+train_arg.add_argument('--gama', type=int, default=0.3, help='weight for timeout impact')
 
 train_arg.add_argument('--temperature', type=float, default=3.0, help='pointer_net initial temperature')
 train_arg.add_argument('--C', type=float, default=10.0, help='pointer_net tan clipping')
