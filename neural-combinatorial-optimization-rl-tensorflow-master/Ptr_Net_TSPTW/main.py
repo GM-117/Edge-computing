@@ -9,6 +9,7 @@ from tqdm import tqdm
 from Ptr_Net_TSPTW.dataset import DataGenerator
 from Ptr_Net_TSPTW.actor import Actor
 from Ptr_Net_TSPTW.config import get_config, print_config
+from Ptr_Net_TSPTW.ga import do_ga
 
 
 # Model: Decoder inputs = Encoder outputs Critic design (state value function approximator) = RNN encoder last hidden
@@ -36,6 +37,14 @@ def main():
     variables_to_save = [v for v in tf.global_variables() if 'Adam' not in v.name]
     saver = tf.train.Saver(var_list=variables_to_save, keep_checkpoint_every_n_hours=1.0)
 
+    predictions = []
+    server_ratio = []
+    task_priority = []
+    ns_prob = []
+
+    training_set = DataGenerator(config)
+    input_batch = training_set.train_batch()
+
     print("Starting session...")
     with tf.Session() as sess:
         # Run initialize op
@@ -46,29 +55,32 @@ def main():
             saver.restore(sess, "save/" + config.restore_from + "/actor.ckpt")
             print("Model restored.")
 
-        # Initialize data generator
-        training_set = DataGenerator(config)
-
         # 训练
         if not config.inference_mode:
 
             # Summary writer
             writer = tf.summary.FileWriter(config.log_dir, sess.graph)
-            predictions = []
 
             print("Starting training...")
-            for i in tqdm(range(100)):
+            for i in tqdm(range(config.nb_epoch)):
                 # Get feed dict
-                input_batch = training_set.train_batch()
-                print(input_batch)
                 feed = {actor.input_: input_batch}
 
                 # Forward pass & train step
-                reward, summary, train_step1, train_step2 = sess.run([actor.reward, actor.merged, actor.train_step1, actor.train_step2],
-                                                             feed_dict=feed)
+                reward, server_ratio_sum, task_priority_sum, ns_prob_, summary, train_step1, train_step2 = sess.run(
+                    [actor.reward, actor.server_ratio_sum, actor.task_priority_sum, actor.ns_prob, actor.merged,
+                     actor.train_step1, actor.train_step2],
+                    feed_dict=feed)
 
-                j = np.argmin(reward)
-                predictions.append(reward[j])
+                reward_mean = np.mean(reward)
+                server_ratio_mean = np.mean(server_ratio_sum)
+                task_priority_mean = np.mean(task_priority_sum)
+                ns_prob_mean = np.mean(ns_prob_)
+
+                predictions.append(reward_mean)
+                server_ratio.append(server_ratio_mean)
+                task_priority.append(task_priority_mean)
+                ns_prob.append(ns_prob_mean)
 
                 if i % 100 == 0:
                     writer.add_summary(summary, i)
@@ -78,7 +90,6 @@ def main():
                     save_path = saver.save(sess, "save/" + config.save_to + "/tmp.ckpt", global_step=i)
                     print("\n Model saved in file: %s" % save_path)
 
-            print(predictions)
             print("Training COMPLETED !")
             saver.save(sess, "save/" + config.save_to + "/actor.ckpt")
 
@@ -95,8 +106,10 @@ def main():
                 ################################### UMPA LOOOOP HERE ###################################
 
                 # Sample solutions
-                positions, reward, server_ratio_sum, task_priority_sum, ns_prob= \
-                    sess.run([actor.positions, actor.reward, actor.server_ratio_sum, actor.task_priority_sum, actor.ns_prob], feed_dict=feed)
+                positions, reward, server_ratio_sum, task_priority_sum, ns_prob = \
+                    sess.run(
+                        [actor.positions, actor.reward, actor.server_ratio_sum, actor.task_priority_sum, actor.ns_prob],
+                        feed_dict=feed)
 
                 # Find best solution
                 j = np.argmin(reward)
@@ -110,6 +123,58 @@ def main():
             print(predictions)
 
             predictions = np.asarray(predictions)
+
+    ga_result, ga_server_ratio_result, ga_task_priority_result, ga_ns_prob_result = do_ga(input_batch)
+
+    # 解决中文显示问题
+    plt.rcParams['font.sans-serif'] = ['KaiTi']  # 指定默认字体
+    plt.rcParams['axes.unicode_minus'] = False  # 解决保存图像是负号'-'显示为方块的问题
+
+    fig = plt.figure()
+    plt.plot(list(range(len(predictions))), predictions, c='red', label=u'指针网络')
+    plt.plot(list(range(len(ga_result))), ga_result, c='blue', label=u'遗传算法')
+    plt.title(u"效果曲线")
+    plt.legend()
+    fig.show()
+
+    fig = plt.figure()
+    plt.plot(list(range(len(server_ratio))), server_ratio, c='red', label=u'指针网络')
+    plt.plot(list(range(len(ga_server_ratio_result))), ga_server_ratio_result, c='blue', label=u'遗传算法')
+    plt.title(u"目标1：服务器负载")
+    plt.legend()
+    fig.show()
+
+    fig = plt.figure()
+    plt.plot(list(range(len(task_priority))), task_priority, c='red', label=u'指针网络')
+    plt.plot(list(range(len(ga_task_priority_result))), ga_task_priority_result, c='blue', label=u'遗传算法')
+    plt.title(u"目标2：任务优先级")
+    plt.legend()
+    fig.show()
+
+    fig = plt.figure()
+    plt.plot(list(range(len(ns_prob))), ns_prob, c='red', label=u'指针网络')
+    plt.plot(list(range(len(ga_ns_prob_result))), ga_ns_prob_result, c='blue', label=u'遗传算法')
+    plt.title(u"目标3：超时率")
+    plt.legend()
+    fig.show()
+
+    print("ptr reward")
+    print(predictions)
+    print("ptr server_ratio")
+    print(server_ratio)
+    print("ptr task_priority")
+    print(task_priority)
+    print("ptr ns_prob")
+    print(ns_prob)
+
+    print("ga reward")
+    print(ga_result)
+    print("ga server_ratio")
+    print(ga_server_ratio_result)
+    print("ga task_priority")
+    print(ga_task_priority_result)
+    print("ga ns_prob")
+    print(ga_ns_prob_result)
 
 
 if __name__ == "__main__":

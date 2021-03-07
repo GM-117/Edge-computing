@@ -1,2 +1,5 @@
 model_checkpoint_path: "actor.ckpt"
+all_model_checkpoint_paths: "tmp.ckpt-100"
+all_model_checkpoint_paths: "tmp.ckpt-200"
+all_model_checkpoint_paths: "tmp.ckpt-300"
 all_model_checkpoint_paths: "actor.ckpt"

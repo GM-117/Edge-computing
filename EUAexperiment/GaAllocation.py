@@ -192,8 +192,8 @@ class GaAllocate:
             self.generation_count += 1
 
         fig = plt.figure()
-        plt.plot(list(range(gen_num-1)), self.user_result[:self.generation_count - 1], c='blue', linestyle='--')
-        plt.plot(list(range(gen_num-1)), self.server_result[:self.generation_count - 1], c='blue')
+        plt.plot(list(range(gen_num - 1)), self.user_result[:self.generation_count - 1], c='blue', linestyle='--')
+        plt.plot(list(range(gen_num - 1)), self.server_result[:self.generation_count - 1], c='blue')
         plt.title("GA")
         fig.show()
 

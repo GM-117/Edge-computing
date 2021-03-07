@@ -1,14 +1,5 @@
-from time import time
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import rcParams
-import math
-from scipy.spatial.distance import pdist, squareform
-from sklearn.decomposition import PCA
-import os
-
-from Ptr_Net_TSPTW.tsptw_with_ortools import Solver
-from Ptr_Net_TSPTW.config import get_config, print_config
+from Ptr_Net_TSPTW.config import get_config
 
 
 class DataGenerator(object):
@@ -48,7 +39,7 @@ class DataGenerator(object):
         task_priority = np.random.randint(5, size=(self.max_length, 1))
         time_use = np.random.randint(20, size=(self.max_length, 1))
         time_sum = np.sum(time_use)
-        timeout = [[time_sum * (np.random.random_sample() * (1.2 - 0.8) + 0.8)] for i in range(self.max_length)]
+        timeout = [[time_sum * (np.random.random_sample() * (1.2 - 0.6) + 0.6)] for i in range(self.max_length)]
         timeout = np.array(timeout)
         sequence = np.concatenate((server_ratio, task_priority, timeout, time_use), axis=1)
 
