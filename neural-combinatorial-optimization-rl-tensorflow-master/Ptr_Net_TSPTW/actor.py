@@ -156,11 +156,15 @@ class Actor(object):
             # 计算超时率
             ns_prob = tf.divide(ns, self.max_length)
             self.ns_prob = tf.reshape(ns_prob, [self.batch_size])
+            self.ns = tf.reshape(ns, [self.batch_size])
 
             # 定义reward函数
             self.reward = self.alpha * tf.cast(self.server_ratio_sum, tf.float32) + \
                           self.beta * tf.cast(self.task_priority_sum, tf.float32) + \
-                          self.gama * tf.cast(self.ns_prob, tf.float32)
+                          self.gama * tf.cast(self.ns_prob, tf.float32) * self.max_length
+            self.alpha_reward = tf.cast(self.server_ratio_sum, tf.float32)
+            self.beta_reward = tf.cast(self.task_priority_sum, tf.float32)
+            self.gama_reward = tf.cast(self.ns_prob, tf.float32)
             variable_summaries('reward', self.reward, with_max_min=True)
 
     def build_optim(self):
@@ -176,15 +180,30 @@ class Actor(object):
                 # Discounted reward
                 # 实际reward和预测的reward的差值
                 self.reward_baseline = tf.stop_gradient(self.reward - self.critic.predictions)  # [Batch size, 1]
+                self.alpha_reward_baseline = tf.stop_gradient(self.alpha_reward - self.critic.predictions)
+                self.beta_reward_baseline = tf.stop_gradient(self.beta_reward - self.critic.predictions)
+                self.gama_reward_baseline = tf.stop_gradient(self.gama_reward - self.critic.predictions)
                 variable_summaries('reward_baseline', self.reward_baseline, with_max_min=True)
                 # Loss
                 # 最小化这个差值
                 self.loss1 = tf.reduce_mean(self.reward_baseline * self.log_softmax, 0)
+                self.loss1_1 = tf.reduce_mean(self.alpha_reward_baseline * self.log_softmax, 0)
+                self.loss1_2 = tf.reduce_mean(self.beta_reward_baseline * self.log_softmax, 0)
+                self.loss1_3 = tf.reduce_mean(self.gama_reward_baseline * self.log_softmax, 0)
                 tf.summary.scalar('loss1', self.loss1)
                 # Minimize step
                 gvs = self.opt1.compute_gradients(self.loss1)
+                gvs1 = self.opt1.compute_gradients(self.loss1_1)
+                gvs2 = self.opt1.compute_gradients(self.loss1_2)
+                gvs3 = self.opt1.compute_gradients(self.loss1_3)
                 capped_gvs = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs if grad is not None]  # L2 clip
+                capped_gvs1 = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs1 if grad is not None]  # L2 clip
+                capped_gvs2 = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs2 if grad is not None]  # L2 clip
+                capped_gvs3 = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs3 if grad is not None]  # L2 clip
                 self.train_step1 = self.opt1.apply_gradients(capped_gvs, global_step=self.global_step)
+                self.train_step1_1 = self.opt1.apply_gradients(capped_gvs1, global_step=self.global_step)
+                self.train_step1_2 = self.opt1.apply_gradients(capped_gvs2, global_step=self.global_step)
+                self.train_step1_3 = self.opt1.apply_gradients(capped_gvs3, global_step=self.global_step)
 
             with tf.name_scope('state_value'):
                 # Critic learning rate
@@ -194,11 +213,23 @@ class Actor(object):
                 self.opt2 = tf.train.AdamOptimizer(learning_rate=self.lr2, beta1=0.9, beta2=0.99, epsilon=0.0000001)
                 # Loss
                 self.loss2 = tf.losses.mean_squared_error(self.reward, self.critic.predictions, weights=1.0)
-                tf.summary.scalar('loss2', self.loss1)
+                self.loss2_1 = tf.losses.mean_squared_error(self.alpha_reward, self.critic.predictions, weights=1.0)
+                self.loss2_2 = tf.losses.mean_squared_error(self.beta_reward, self.critic.predictions, weights=1.0)
+                self.loss2_3 = tf.losses.mean_squared_error(self.gama_reward, self.critic.predictions, weights=1.0)
+                tf.summary.scalar('loss2', self.loss2)
                 # Minimize step
                 gvs2 = self.opt2.compute_gradients(self.loss2)
-                capped_gvs2 = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs2 if grad is not None]  # L2 clip
+                gvs2_1 = self.opt2.compute_gradients(self.loss2_1)
+                gvs2_2 = self.opt2.compute_gradients(self.loss2_2)
+                gvs2_3 = self.opt2.compute_gradients(self.loss2_3)
+                capped_gvs2 = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs2 if grad is not None]
+                capped_gvs2_1 = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs2_1 if grad is not None]
+                capped_gvs2_2 = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs2_2 if grad is not None]
+                capped_gvs2_3 = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs2_3 if grad is not None]
                 self.train_step2 = self.opt1.apply_gradients(capped_gvs2, global_step=self.global_step2)
+                self.train_step2_1 = self.opt1.apply_gradients(capped_gvs2_1, global_step=self.global_step2)
+                self.train_step2_2 = self.opt1.apply_gradients(capped_gvs2_2, global_step=self.global_step2)
+                self.train_step2_3 = self.opt1.apply_gradients(capped_gvs2_3, global_step=self.global_step2)
 
 
 if __name__ == "__main__":

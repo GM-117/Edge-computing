@@ -7,7 +7,7 @@ config, _ = get_config()
 
 chromosome_num = 50
 tasks = []
-tasks_num = 0
+tasks_num = config.max_length
 # 迭代轮数
 gen_num = config.nb_epoch
 
@@ -36,7 +36,7 @@ class Chromosome:
         self.fitness = 0.0
         self.server_ratio = 0.0
         self.task_priority = 0.0
-        self.ns_prob = 0.0
+        self.ns = 0.0
         self.evaluate_fitness()
 
     def evaluate_fitness(self):
@@ -44,7 +44,7 @@ class Chromosome:
         for i in range(tasks_num):
             task_priority_max = max(task_priority_max, tasks[i][1])
         time_used = 0
-        ns = 0
+        ns_ = 0
         server_ratio_sum = 0
         task_priority_sum = 0
         for idx in range(tasks_num):
@@ -59,20 +59,19 @@ class Chromosome:
             task_priority_sum += task_priority
             time_used += time_use
             if timeout < time_used:
-                ns += 1
+                ns_ += 1
 
-        self.fitness = alpha * server_ratio_sum + beta * task_priority_sum + gama * (ns / tasks_num)
+        self.fitness = alpha * server_ratio_sum + beta * task_priority_sum + gama * ns_
         self.server_ratio = server_ratio_sum
         self.task_priority = task_priority_sum
-        self.ns_prob = (ns / tasks_num)
+        self.ns = ns_
 
 
 class GaAllocate:
     def __init__(self, input):
         self.sumFitness = 0.0
-        global tasks, tasks_num
+        global tasks
         tasks = input
-        tasks_num = len(input)
         self.generation_count = 0
         self.best = Chromosome()
         # 染色体
@@ -81,7 +80,7 @@ class GaAllocate:
         self.result = []
         self.server_ratio_result = []
         self.task_priority_result = []
-        self.ns_prob_result = []
+        self.ns_result = []
 
     @staticmethod
     def cross(parent1, parent2):
@@ -175,34 +174,34 @@ class GaAllocate:
             self.result.append(self.best.fitness)
             self.server_ratio_result.append(self.best.server_ratio)
             self.task_priority_result.append(self.best.task_priority)
-            self.ns_prob_result.append(self.best.ns_prob)
+            self.ns_result.append(self.best.ns)
             self.generate_next_generation()
             self.generation_count += 1
 
-        return self.result, self.server_ratio_result, self.task_priority_result, self.ns_prob_result
+        return self.result, self.server_ratio_result, self.task_priority_result, self.ns_result
 
 
 def do_ga(input_batch):
     result_batch = []
     server_ratio_result_batch = []
     task_priority_result_batch = []
-    ns_prob_result_batch = []
+    ns_result_batch = []
 
     for task in tqdm(input_batch):
         ga = GaAllocate(task)
-        result, server_ratio_result, task_priority_result, ns_prob_result = ga.train()
+        result, server_ratio_result, task_priority_result, ns_result = ga.train()
         result_batch.append(result)
         server_ratio_result_batch.append(server_ratio_result)
         task_priority_result_batch.append(task_priority_result)
-        ns_prob_result_batch.append(ns_prob_result)
+        ns_result_batch.append(ns_result)
 
     result_array = np.array(result_batch)
     server_ratio_result_array = np.array(server_ratio_result_batch)
     task_priority_result_array = np.array(task_priority_result_batch)
-    ns_prob_result_array = np.array(ns_prob_result_batch)
+    ns_result_array = np.array(ns_result_batch)
 
     result = np.mean(result_array, axis=0)
     server_ratio_result = np.mean(server_ratio_result_array, axis=0)
     task_priority_result = np.mean(task_priority_result_array, axis=0)
-    ns_prob_result = np.mean(ns_prob_result_array, axis=0)
-    return result, server_ratio_result, task_priority_result, ns_prob_result
+    ns_result = np.mean(ns_result_array, axis=0)
+    return result, server_ratio_result, task_priority_result, ns_result

@@ -10,6 +10,7 @@ from Ptr_Net_TSPTW.dataset import DataGenerator
 from Ptr_Net_TSPTW.actor import Actor
 from Ptr_Net_TSPTW.config import get_config, print_config
 from Ptr_Net_TSPTW.ga import do_ga
+from Ptr_Net_TSPTW.rand import do_rand
 
 
 # Model: Decoder inputs = Encoder outputs Critic design (state value function approximator) = RNN encoder last hidden
@@ -40,7 +41,7 @@ def main():
     predictions = []
     server_ratio = []
     task_priority = []
-    ns_prob = []
+    ns_ = []
 
     training_set = DataGenerator(config)
     input_batch = training_set.train_batch()
@@ -67,20 +68,20 @@ def main():
                 feed = {actor.input_: input_batch}
 
                 # Forward pass & train step
-                reward, server_ratio_sum, task_priority_sum, ns_prob_, summary, train_step1, train_step2 = sess.run(
-                    [actor.reward, actor.server_ratio_sum, actor.task_priority_sum, actor.ns_prob, actor.merged,
+                reward, server_ratio_sum, task_priority_sum, ns, summary, train_step1, train_step2 = sess.run(
+                    [actor.reward, actor.server_ratio_sum, actor.task_priority_sum, actor.ns, actor.merged,
                      actor.train_step1, actor.train_step2],
                     feed_dict=feed)
 
                 reward_mean = np.mean(reward)
                 server_ratio_mean = np.mean(server_ratio_sum)
                 task_priority_mean = np.mean(task_priority_sum)
-                ns_prob_mean = np.mean(ns_prob_)
+                ns_mean = np.mean(ns)
 
                 predictions.append(reward_mean)
                 server_ratio.append(server_ratio_mean)
                 task_priority.append(task_priority_mean)
-                ns_prob.append(ns_prob_mean)
+                ns_.append(ns_mean)
 
                 if i % 100 == 0:
                     writer.add_summary(summary, i)
@@ -124,7 +125,8 @@ def main():
 
             predictions = np.asarray(predictions)
 
-    ga_result, ga_server_ratio_result, ga_task_priority_result, ga_ns_prob_result = do_ga(input_batch)
+    ga_result, ga_server_ratio_result, ga_task_priority_result, ga_ns_result = do_ga(input_batch)
+    rand_result, rand_server_ratio_result, rand_task_priority_result, rand_ns_result = do_rand(input_batch)
 
     # 解决中文显示问题
     plt.rcParams['font.sans-serif'] = ['KaiTi']  # 指定默认字体
@@ -133,6 +135,7 @@ def main():
     fig = plt.figure()
     plt.plot(list(range(len(predictions))), predictions, c='red', label=u'指针网络')
     plt.plot(list(range(len(ga_result))), ga_result, c='blue', label=u'遗传算法')
+    plt.plot(list(range(len(rand_result))), rand_result, c='green', label=u'随机算法')
     plt.title(u"效果曲线")
     plt.legend()
     fig.show()
@@ -140,6 +143,7 @@ def main():
     fig = plt.figure()
     plt.plot(list(range(len(server_ratio))), server_ratio, c='red', label=u'指针网络')
     plt.plot(list(range(len(ga_server_ratio_result))), ga_server_ratio_result, c='blue', label=u'遗传算法')
+    plt.plot(list(range(len(rand_server_ratio_result))), rand_server_ratio_result, c='green', label=u'随机算法')
     plt.title(u"目标1：服务器负载")
     plt.legend()
     fig.show()
@@ -147,34 +151,18 @@ def main():
     fig = plt.figure()
     plt.plot(list(range(len(task_priority))), task_priority, c='red', label=u'指针网络')
     plt.plot(list(range(len(ga_task_priority_result))), ga_task_priority_result, c='blue', label=u'遗传算法')
+    plt.plot(list(range(len(rand_task_priority_result))), rand_task_priority_result, c='green', label=u'随机算法')
     plt.title(u"目标2：任务优先级")
     plt.legend()
     fig.show()
 
     fig = plt.figure()
-    plt.plot(list(range(len(ns_prob))), ns_prob, c='red', label=u'指针网络')
-    plt.plot(list(range(len(ga_ns_prob_result))), ga_ns_prob_result, c='blue', label=u'遗传算法')
-    plt.title(u"目标3：超时率")
+    plt.plot(list(range(len(ns_))), ns_, c='red', label=u'指针网络')
+    plt.plot(list(range(len(ga_ns_result))), ga_ns_result, c='blue', label=u'遗传算法')
+    plt.plot(list(range(len(rand_ns_result))), rand_ns_result, c='green', label=u'随机算法')
+    plt.title(u"目标3：超时数")
     plt.legend()
     fig.show()
-
-    print("ptr reward")
-    print(predictions)
-    print("ptr server_ratio")
-    print(server_ratio)
-    print("ptr task_priority")
-    print(task_priority)
-    print("ptr ns_prob")
-    print(ns_prob)
-
-    print("ga reward")
-    print(ga_result)
-    print("ga server_ratio")
-    print(ga_server_ratio_result)
-    print("ga task_priority")
-    print(ga_task_priority_result)
-    print("ga ns_prob")
-    print(ga_ns_prob_result)
 
 
 if __name__ == "__main__":
