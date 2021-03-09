@@ -35,13 +35,24 @@ class DataGenerator(object):
             np.random.seed(seed)
 
         # Randomly generate (max_length) task
-        server_ratio = np.random.rand(self.max_length, 1)
+        C = np.random.randint(low=1, high=11, size=(self.max_length, 1))
+        O = np.random.randint(low=1, high=11, size=(self.max_length, 1))
+        B = np.random.randint(low=1, high=11, size=(self.max_length, 1))
+        M = np.random.randint(low=1, high=11, size=(self.max_length, 1))
+        Cs = (C.sum(axis=0) / self.max_length) * 10
+        Os = (O.sum(axis=0) / self.max_length) * 10
+        Bs = (B.sum(axis=0) / self.max_length) * 10
+        Ms = (M.sum(axis=0) / self.max_length) * 10
+        theta_c = C / Cs
+        theta_o = O / Os
+        theta_b = B / Bs
+        theta_m = M / Ms
         task_priority = np.random.randint(5, size=(self.max_length, 1))
         time_use = np.random.randint(20, size=(self.max_length, 1))
         time_sum = np.sum(time_use)
         timeout = [[time_sum * (np.random.random_sample() * (1.2 - 0.6) + 0.6)] for i in range(self.max_length)]
         timeout = np.array(timeout)
-        sequence = np.concatenate((server_ratio, task_priority, timeout, time_use), axis=1)
+        sequence = np.concatenate((theta_c, theta_o, theta_b, theta_m, task_priority, timeout, time_use), axis=1)
 
         return sequence
 
@@ -55,5 +66,3 @@ if __name__ == "__main__":
     # input_batch = dataset.train_batch()
     input_batch, or_sequence, tw_open, tw_close = dataset.test_batch(seed=0)
     print()
-
-    dataset.load_Dumas()

@@ -1,4 +1,5 @@
-import tensorflow as tf
 import numpy as np
 
-print(10 % 5)
+max_length = 10
+
+print(0.3*(0.25*(2.303616220371294 + 2.8852049876333905+2.59534201539759+2.715836776597725)))

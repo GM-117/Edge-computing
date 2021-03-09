@@ -22,15 +22,15 @@ net_arg.add_argument('--hidden_dim', type=int, default=128, help='actor LSTM num
 
 # Data
 data_arg = add_argument_group('Data')
-data_arg.add_argument('--batch_size', type=int, default=32
+data_arg.add_argument('--batch_size', type=int, default=128
                       , help='batch size')
-data_arg.add_argument('--input_dimension', type=int, default=4, help='data dimension')
-data_arg.add_argument('--max_length', type=int, default=40, help='number of task')  # this excludes depot
+data_arg.add_argument('--input_dimension', type=int, default=7, help='data dimension')
+data_arg.add_argument('--max_length', type=int, default=20, help='number of task')  # this excludes depot
 data_arg.add_argument('--dir_', type=str, default='n20w100', help='Dumas benchmarch instances')
 
 # Training / test parameters
 train_arg = add_argument_group('Training')
-train_arg.add_argument('--nb_epoch', type=int, default=1000, help='nb epoch')
+train_arg.add_argument('--nb_epoch', type=int, default=400, help='nb epoch')
 train_arg.add_argument('--lr1_start', type=float, default=0.001, help='actor learning rate')
 train_arg.add_argument('--lr1_decay_step', type=int, default=5000, help='lr1 decay step')
 train_arg.add_argument('--lr1_decay_rate', type=float, default=0.96, help='lr1 decay rate')
@@ -38,6 +38,11 @@ train_arg.add_argument('--lr1_decay_rate', type=float, default=0.96, help='lr1 d
 train_arg.add_argument('--alpha', type=int, default=0.3, help='weight for load impact')
 train_arg.add_argument('--beta', type=int, default=0.3, help='weight for priority impact')
 train_arg.add_argument('--gama', type=int, default=0.3, help='weight for timeout impact')
+
+train_arg.add_argument('--alpha_c', type=int, default=0.25, help='weight for cpu')
+train_arg.add_argument('--alpha_o', type=int, default=0.25, help='weight for io')
+train_arg.add_argument('--alpha_b', type=int, default=0.25, help='weight for bandwidth')
+train_arg.add_argument('--alpha_m', type=int, default=0.25, help='weight for memory')
 
 train_arg.add_argument('--temperature', type=float, default=3.0, help='pointer_net initial temperature')
 train_arg.add_argument('--C', type=float, default=10.0, help='pointer_net tan clipping')

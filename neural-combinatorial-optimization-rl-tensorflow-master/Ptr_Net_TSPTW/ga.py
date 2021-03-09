@@ -15,6 +15,11 @@ alpha = config.alpha
 beta = config.beta
 gama = config.gama
 
+alpha_c = config.alpha_c
+alpha_o = config.alpha_o
+alpha_b = config.alpha_b
+alpha_m = config.alpha_m
+
 
 def copy_int(old_arr: [int]):
     new_arr = []
@@ -34,7 +39,10 @@ class Chromosome:
             random.shuffle(genes)
         self.genes = genes
         self.fitness = 0.0
-        self.server_ratio = 0.0
+        self.cpu_sum = 0.0
+        self.io_sum = 0.0
+        self.bandwidth_sum = 0.0
+        self.memory_sum = 0.0
         self.task_priority = 0.0
         self.ns = 0.0
         self.evaluate_fitness()
@@ -42,29 +50,47 @@ class Chromosome:
     def evaluate_fitness(self):
         task_priority_max = 0
         for i in range(tasks_num):
-            task_priority_max = max(task_priority_max, tasks[i][1])
+            task_priority_max = max(task_priority_max, tasks[i][4])
         time_used = 0
         ns_ = 0
-        server_ratio_sum = 0
+        cpu_sum = 0
+        io_sum = 0
+        bandwidth_sum = 0
+        memory_sum = 0
         task_priority_sum = 0
         for idx in range(tasks_num):
             i = self.genes[idx]
-            server_ratio = tasks[i][0]
-            task_priority = tasks[i][1]
-            timeout = tasks[i][2]
-            time_use = tasks[i][3]
-            server_ratio = server_ratio * (1 - idx / tasks_num)
+            cpu = tasks[i][0]
+            io = tasks[i][1]
+            bandwidth = tasks[i][2]
+            memory = tasks[i][3]
+            task_priority = tasks[i][4]
+            timeout = tasks[i][5]
+            time_use = tasks[i][6]
+            cpu = cpu * (1 - idx / tasks_num)
+            io = io * (1 - idx / tasks_num)
+            bandwidth = bandwidth * (1 - idx / tasks_num)
+            memory = memory * (1 - idx / tasks_num)
             task_priority = (task_priority / task_priority_max) * (1 - idx / tasks_num)
-            server_ratio_sum += server_ratio
+            cpu_sum += cpu
+            io_sum += io
+            bandwidth_sum += bandwidth
+            memory_sum += memory
             task_priority_sum += task_priority
             time_used += time_use
             if timeout < time_used:
                 ns_ += 1
 
-        self.fitness = alpha * server_ratio_sum + beta * task_priority_sum + gama * ns_
-        self.server_ratio = server_ratio_sum
+        reward_1 = alpha * (alpha_c * cpu_sum + alpha_o * io_sum + alpha_b * bandwidth_sum + alpha_m * memory_sum)
+        reward_2 = beta * task_priority_sum / tasks_num
+        reward_3 = gama * (ns_ / tasks_num)
+        self.fitness = reward_1 + reward_2 + reward_3
+        self.cpu_sum = cpu_sum
+        self.io_sum = io_sum
+        self.bandwidth_sum = bandwidth_sum
+        self.memory_sum = memory_sum
         self.task_priority = task_priority_sum
-        self.ns = ns_
+        self.ns = ns_ / tasks_num
 
 
 class GaAllocate:
@@ -78,7 +104,10 @@ class GaAllocate:
         self.chromosome_list = []
         # 迭代次数对应的解
         self.result = []
-        self.server_ratio_result = []
+        self.cpu_result = []
+        self.io_result = []
+        self.bandwidth_result = []
+        self.memory_result = []
         self.task_priority_result = []
         self.ns_result = []
 
@@ -172,36 +201,51 @@ class GaAllocate:
         self.generation_count = 0
         while self.generation_count < gen_num:
             self.result.append(self.best.fitness)
-            self.server_ratio_result.append(self.best.server_ratio)
+            self.cpu_result.append(self.best.cpu_sum)
+            self.io_result.append(self.best.io_sum)
+            self.bandwidth_result.append(self.best.bandwidth_sum)
+            self.memory_result.append(self.best.memory_sum)
             self.task_priority_result.append(self.best.task_priority)
             self.ns_result.append(self.best.ns)
             self.generate_next_generation()
             self.generation_count += 1
 
-        return self.result, self.server_ratio_result, self.task_priority_result, self.ns_result
+        return self.result, self.cpu_result, self.io_result, self.bandwidth_result, self.memory_result, self.task_priority_result, self.ns_result
 
 
 def do_ga(input_batch):
     result_batch = []
-    server_ratio_result_batch = []
+    cpu_result_batch = []
+    io_result_batch = []
+    bandwidth_result_batch = []
+    memory_result_batch = []
     task_priority_result_batch = []
     ns_result_batch = []
 
     for task in tqdm(input_batch):
         ga = GaAllocate(task)
-        result, server_ratio_result, task_priority_result, ns_result = ga.train()
+        result, cpu_result, io_result, bandwidth_result, memory_result, task_priority_result, ns_result = ga.train()
         result_batch.append(result)
-        server_ratio_result_batch.append(server_ratio_result)
+        cpu_result_batch.append(cpu_result)
+        io_result_batch.append(io_result)
+        bandwidth_result_batch.append(bandwidth_result)
+        memory_result_batch.append(memory_result)
         task_priority_result_batch.append(task_priority_result)
         ns_result_batch.append(ns_result)
 
     result_array = np.array(result_batch)
-    server_ratio_result_array = np.array(server_ratio_result_batch)
+    cpu_result_array = np.array(cpu_result_batch)
+    io_result_array = np.array(io_result_batch)
+    bandwidth_result_array = np.array(bandwidth_result_batch)
+    memory_result_array = np.array(memory_result_batch)
     task_priority_result_array = np.array(task_priority_result_batch)
     ns_result_array = np.array(ns_result_batch)
 
     result = np.mean(result_array, axis=0)
-    server_ratio_result = np.mean(server_ratio_result_array, axis=0)
+    cpu_result = np.mean(cpu_result_array, axis=0)
+    io_result = np.mean(io_result_array, axis=0)
+    bandwidth_result = np.mean(bandwidth_result_array, axis=0)
+    memory_result = np.mean(memory_result_array, axis=0)
     task_priority_result = np.mean(task_priority_result_array, axis=0)
     ns_result = np.mean(ns_result_array, axis=0)
-    return result, server_ratio_result, task_priority_result, ns_result
+    return result, cpu_result, io_result, bandwidth_result, memory_result, task_priority_result, ns_result
