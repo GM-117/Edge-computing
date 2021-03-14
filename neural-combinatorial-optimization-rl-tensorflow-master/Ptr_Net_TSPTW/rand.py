@@ -38,7 +38,6 @@ def get_rand_result(tasks):
         task_priority[min_idx] = 10000
         timeout[min_idx] = 10000
         result_idx_list.append(min_idx)
-    print(result_idx_list)
 
     task_priority_max = 0
     for i in range(tasks_num):

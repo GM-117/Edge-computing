@@ -1,9 +1,5 @@
 import tensorflow as tf
-from tensorflow.contrib.rnn import LSTMCell, MultiRNNCell, DropoutWrapper
-import numpy as np
-from tqdm import tqdm
-import matplotlib.pyplot as plt
-
+from tensorflow.contrib.rnn import LSTMCell
 
 class Critic(object):
 
@@ -21,7 +17,7 @@ class Critic(object):
         self.initializer = tf.contrib.layers.xavier_initializer()  # variables initializer
 
         # Baseline setup
-        self.init_baseline = 7.  # self.max_length/2 # good initial baseline for TSP
+        self.init_baseline = self.max_length/2.  # self.max_length/2 # good initial baseline for TSP
 
         # Training config
         self.is_training = not config.inference_mode

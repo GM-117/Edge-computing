@@ -22,15 +22,15 @@ net_arg.add_argument('--hidden_dim', type=int, default=128, help='actor LSTM num
 
 # Data
 data_arg = add_argument_group('Data')
-data_arg.add_argument('--batch_size', type=int, default=128
+data_arg.add_argument('--batch_size', type=int, default=32
                       , help='batch size')
 data_arg.add_argument('--input_dimension', type=int, default=7, help='data dimension')
-data_arg.add_argument('--max_length', type=int, default=20, help='number of task')  # this excludes depot
+data_arg.add_argument('--max_length', type=int, default=40, help='number of task')  # this excludes depot
 data_arg.add_argument('--dir_', type=str, default='n20w100', help='Dumas benchmarch instances')
 
 # Training / test parameters
 train_arg = add_argument_group('Training')
-train_arg.add_argument('--nb_epoch', type=int, default=400, help='nb epoch')
+train_arg.add_argument('--nb_epoch', type=int, default=300, help='nb epoch')
 train_arg.add_argument('--lr1_start', type=float, default=0.001, help='actor learning rate')
 train_arg.add_argument('--lr1_decay_step', type=int, default=5000, help='lr1 decay step')
 train_arg.add_argument('--lr1_decay_rate', type=float, default=0.96, help='lr1 decay rate')
@@ -51,7 +51,7 @@ train_arg.add_argument('--C', type=float, default=10.0, help='pointer_net tan cl
 misc_arg = add_argument_group('User options')
 
 misc_arg.add_argument('--pretrain', type=str2bool, default=False, help='faster datagen for infinite speed')
-misc_arg.add_argument('--inference_mode', type=str2bool, default=True,
+misc_arg.add_argument('--inference_mode', type=str2bool, default=False,
                       help='switch to inference mode when model is trained')
 misc_arg.add_argument('--restore_model', type=str2bool, default=True, help='whether or not model is retrieved')
 

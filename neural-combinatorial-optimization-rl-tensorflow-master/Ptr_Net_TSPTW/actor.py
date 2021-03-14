@@ -49,6 +49,8 @@ class Actor(object):
 
         # Training config (actor)
         self.global_step = tf.Variable(0, trainable=False, name="global_step")  # global step
+        self.global_step_task = tf.Variable(0, trainable=False, name="global_step_task")  # global step
+        self.global_step_time = tf.Variable(0, trainable=False, name="global_step_time")  # global step
         self.lr1_start = config.lr1_start  # initial learning rate
         self.lr1_decay_rate = config.lr1_decay_rate  # learning rate decay rate
         self.lr1_decay_step = config.lr1_decay_step  # learning rate decay step
@@ -56,6 +58,8 @@ class Actor(object):
 
         # Training config (critic)
         self.global_step2 = tf.Variable(0, trainable=False, name="global_step2")  # global step
+        self.global_step2_task = tf.Variable(0, trainable=False, name="global_step2_task")  # global step
+        self.global_step2_time = tf.Variable(0, trainable=False, name="global_step2_time")  # global step
         self.lr2_start = config.lr1_start  # initial learning rate
         self.lr2_decay_rate = config.lr1_decay_rate  # learning rate decay rate
         self.lr2_decay_step = config.lr1_decay_step  # learning rate decay step
@@ -67,8 +71,12 @@ class Actor(object):
 
         self.build_permutation()
         self.build_critic()
+        self.build_critic_task_()
+        self.build_critic_time_()
         self.build_reward()
         self.build_optim()
+        self.build_optim_task()
+        self.build_optim_time()
         self.merged = tf.summary.merge_all()
 
     def build_weight_list(self):
@@ -109,6 +117,22 @@ class Actor(object):
             # 得出self.critic.predictions
             variable_summaries('predictions', self.critic.predictions, with_max_min=True)
 
+    def build_critic_task_(self):
+        with tf.variable_scope("critic_task"):
+            # Critic predicts reward (parametric baseline for REINFORCE)
+            self.critic_task_ = Critic(self.config)
+            self.critic_task_.predict_rewards(self.input_)
+            # 得出self.critic.predictions
+            variable_summaries('predictions_task', self.critic_task_.predictions, with_max_min=True)
+
+    def build_critic_time_(self):
+        with tf.variable_scope("critic_time"):
+            # Critic predicts reward (parametric baseline for REINFORCE)
+            self.critic_time_ = Critic(self.config)
+            self.critic_time_.predict_rewards(self.input_)
+            # 得出self.critic.predictions
+            variable_summaries('predictions_time', self.critic_time_.predictions, with_max_min=True)
+
     def build_reward(self):
         with tf.name_scope('permutations'):
             # Reorder input % tour
@@ -126,13 +150,13 @@ class Actor(object):
                                                                      0])  # [batch size, seq length , features] to [features, seq length, batch_size]
 
             # cpu
-            cpu = self.ordered_input_[0]
+            cpu = self.ordered_input_[0] * 4
             # io
-            io = self.ordered_input_[1]
+            io = self.ordered_input_[1] * 4
             # bandwidth
-            bandwidth = self.ordered_input_[2]
+            bandwidth = self.ordered_input_[2] * 4
             # memory
-            memory = self.ordered_input_[3]
+            memory = self.ordered_input_[3] * 4
             # 优先级 λ
             task_priority = self.ordered_input_[4]
             # 超时时间 t
@@ -144,12 +168,19 @@ class Actor(object):
             # 计算带权服务器利用率
             cpu_weight = tf.multiply(cpu, self.weight_list)
             self.cpu_sum = tf.reduce_sum(cpu_weight, axis=0)  # [batch_size]
+            self.cpu_sum = self.cpu_sum / (self.max_length / 4)
+
             io_weight = tf.multiply(io, self.weight_list)
             self.io_sum = tf.reduce_sum(io_weight, axis=0)  # [batch_size]
+            self.io_sum = self.io_sum / (self.max_length / 4)
+
             bandwidth_weight = tf.multiply(bandwidth, self.weight_list)
             self.bandwidth_sum = tf.reduce_sum(bandwidth_weight, axis=0)  # [batch_size]
+            self.bandwidth_sum = self.bandwidth_sum / (self.max_length / 4)
+
             memory_weight = tf.multiply(memory, self.weight_list)
             self.memory_sum = tf.reduce_sum(memory_weight, axis=0)  # [batch_size]
+            self.memory_sum = self.memory_sum / (self.max_length / 4)
 
             # 求每组样本的λ最大值
             priority_max = tf.reduce_max(task_priority, axis=0)
@@ -159,6 +190,8 @@ class Actor(object):
             task_priority_weight = tf.multiply(task_priority, self.weight_list)
             # 求和
             self.task_priority_sum = tf.reduce_sum(task_priority_weight, axis=0)  # [batch_size]
+            # 0.25n
+            self.task_priority_sum = self.task_priority_sum / (self.max_length / 4)
 
             # 计算超时率
             ns = tf.constant([0 for i in range(self.batch_size)], dtype=tf.float32, shape=[1, self.batch_size])
@@ -175,13 +208,14 @@ class Actor(object):
             self.ns = tf.reshape(ns, [self.batch_size])
 
             # 定义reward函数
-            reward_1 = 5 * (self.alpha_c * tf.cast(self.cpu_sum, tf.float32) +
-                            self.alpha_o * tf.cast(self.io_sum, tf.float32) +
-                            self.alpha_b * tf.cast(self.bandwidth_sum, tf.float32) +
-                            self.alpha_m * tf.cast(self.memory_sum, tf.float32))
-            reward_2 = self.beta * tf.cast(self.task_priority_sum, tf.float32)
-            reward_3 = self.gama * tf.cast(self.ns_prob, tf.float32)
-            self.reward = reward_1 + reward_2 + reward_3
+            self.reward_1 = 0.25 * (tf.cast(self.cpu_sum, tf.float32) +
+                                    tf.cast(self.io_sum, tf.float32) +
+                                    tf.cast(self.bandwidth_sum, tf.float32) +
+                                    tf.cast(self.memory_sum, tf.float32))
+            self.reward_2 = tf.cast(self.task_priority_sum, tf.float32)
+            self.reward_3 = tf.cast(self.ns_prob, tf.float32)
+            self.reward = self.reward_1
+            self.result = self.reward_1 + self.reward_2 + self.reward_3
             variable_summaries('reward', self.reward, with_max_min=True)
 
     def build_optim(self):
@@ -220,6 +254,88 @@ class Actor(object):
                 gvs2 = self.opt2.compute_gradients(self.loss2)
                 capped_gvs2 = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs2 if grad is not None]
                 self.train_step2 = self.opt1.apply_gradients(capped_gvs2, global_step=self.global_step2)
+
+    def build_optim_task(self):
+        # Update moving_mean and moving_variance for batch normalization layers
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(update_ops):
+            with tf.name_scope('reinforce_task'):
+                # Actor learning rate
+                self.lr1_task = tf.train.exponential_decay(self.lr1_start, self.global_step_task, self.lr1_decay_step,
+                                                           self.lr1_decay_rate, staircase=False, name="learning_rate1")
+                # Optimizer
+                self.opt1_task = tf.train.AdamOptimizer(learning_rate=self.lr1_task, beta1=0.9, beta2=0.99,
+                                                        epsilon=0.0000001)
+                # Discounted reward
+                # 实际reward和预测的reward的差值
+                self.reward_baseline_task = tf.stop_gradient(
+                    self.reward_2 - self.critic_task_.predictions)  # [Batch size, 1]
+                variable_summaries('reward_baseline_task', self.reward_baseline_task, with_max_min=True)
+                # Loss
+                # 最小化这个差值
+                self.loss1_task = tf.reduce_mean(self.reward_baseline_task * self.log_softmax, 0)
+                tf.summary.scalar('loss1_task', self.loss1_task)
+                # Minimize step
+                gvs = self.opt1_task.compute_gradients(self.loss1_task)
+                capped_gvs = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs if grad is not None]  # L2 clip
+                self.train_step1_task = self.opt1_task.apply_gradients(capped_gvs, global_step=self.global_step_task)
+
+            with tf.name_scope('state_value_task'):
+                # Critic learning rate
+                self.lr2_task = tf.train.exponential_decay(self.lr2_start, self.global_step2_task, self.lr2_decay_step,
+                                                           self.lr2_decay_rate, staircase=False, name="learning_rate1")
+                # Optimizer
+                self.opt2_task = tf.train.AdamOptimizer(learning_rate=self.lr2_task, beta1=0.9, beta2=0.99,
+                                                        epsilon=0.0000001)
+                # Loss
+                self.loss2_task = tf.losses.mean_squared_error(self.reward_2, self.critic_task_.predictions,
+                                                               weights=1.0)
+                tf.summary.scalar('loss2_task', self.loss2_task)
+                # Minimize step
+                gvs2 = self.opt2_task.compute_gradients(self.loss2_task)
+                capped_gvs2 = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs2 if grad is not None]
+                self.train_step2_task = self.opt1_task.apply_gradients(capped_gvs2, global_step=self.global_step2_task)
+
+    def build_optim_time(self):
+        # Update moving_mean and moving_variance for batch normalization layers
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(update_ops):
+            with tf.name_scope('reinforce_time'):
+                # Actor learning rate
+                self.lr1_time = tf.train.exponential_decay(self.lr1_start, self.global_step_time, self.lr1_decay_step,
+                                                           self.lr1_decay_rate, staircase=False, name="learning_rate1")
+                # Optimizer
+                self.opt1_time = tf.train.AdamOptimizer(learning_rate=self.lr1_time, beta1=0.9, beta2=0.99,
+                                                        epsilon=0.0000001)
+                # Discounted reward
+                # 实际reward和预测的reward的差值
+                self.reward_baseline_time = tf.stop_gradient(
+                    self.reward_3 - self.critic_time_.predictions)  # [Batch size, 1]
+                variable_summaries('reward_baseline_time', self.reward_baseline_time, with_max_min=True)
+                # Loss
+                # 最小化这个差值
+                self.loss1_time = tf.reduce_mean(self.reward_baseline_time * self.log_softmax, 0)
+                tf.summary.scalar('loss1_time', self.loss1_time)
+                # Minimize step
+                gvs = self.opt1_time.compute_gradients(self.loss1_time)
+                capped_gvs = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs if grad is not None]  # L2 clip
+                self.train_step1_time = self.opt1_time.apply_gradients(capped_gvs, global_step=self.global_step_time)
+
+            with tf.name_scope('state_value_time'):
+                # Critic learning rate
+                self.lr2_time = tf.train.exponential_decay(self.lr2_start, self.global_step2_time, self.lr2_decay_step,
+                                                           self.lr2_decay_rate, staircase=False, name="learning_rate1")
+                # Optimizer
+                self.opt2_time = tf.train.AdamOptimizer(learning_rate=self.lr2_time, beta1=0.9, beta2=0.99,
+                                                        epsilon=0.0000001)
+                # Loss
+                self.loss2_time = tf.losses.mean_squared_error(self.reward_3, self.critic_time_.predictions,
+                                                               weights=1.0)
+                tf.summary.scalar('loss2_time', self.loss2_time)
+                # Minimize step
+                gvs2 = self.opt2_time.compute_gradients(self.loss2_time)
+                capped_gvs2 = [(tf.clip_by_norm(grad, 1.), var) for grad, var in gvs2 if grad is not None]
+                self.train_step2_time = self.opt1_time.apply_gradients(capped_gvs2, global_step=self.global_step2_time)
 
 
 if __name__ == "__main__":

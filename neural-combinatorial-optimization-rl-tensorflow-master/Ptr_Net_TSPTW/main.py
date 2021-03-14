@@ -70,11 +70,19 @@ def main():
     #             feed = {actor.input_: input_batch}
     #
     #             # Forward pass & train step
-    #             reward, cpu_sum, io_sum, bandwidth_sum, memory_sum, task_priority_sum, ns, summary, train_step1, train_step2 = sess.run(
-    #                 [actor.reward, actor.cpu_sum, actor.io_sum, actor.bandwidth_sum, actor.memory_sum,
+    #             reward, cpu_sum, io_sum, bandwidth_sum, memory_sum, task_priority_sum, ns, summary, train_step1, train_step2, train_step1_task, train_step2_task, train_step1_time, train_step2_time = sess.run(
+    #                 [actor.result, actor.cpu_sum, actor.io_sum, actor.bandwidth_sum, actor.memory_sum,
     #                  actor.task_priority_sum, actor.ns_prob, actor.merged,
-    #                  actor.train_step1, actor.train_step2],
+    #                  actor.train_step1, actor.train_step2,
+    #                  actor.train_step1_task, actor.train_step2_task, actor.train_step1_time, actor.train_step2_time],
     #                 feed_dict=feed)
+    #
+    #             # reward, cpu_sum, io_sum, bandwidth_sum, memory_sum, task_priority_sum, ns, summary, train_step1, train_step2 = sess.run(
+    #             #     [actor.reward, actor.cpu_sum, actor.io_sum, actor.bandwidth_sum, actor.memory_sum,
+    #             #      actor.task_priority_sum, actor.ns_prob, actor.merged,
+    #             #      actor.train_step1, actor.train_step2,
+    #             #      ],
+    #             #     feed_dict=feed)
     #
     #             reward_mean = np.mean(reward)
     #             cpu_mean = np.mean(cpu_sum)
@@ -92,11 +100,11 @@ def main():
     #             task_priority.append(task_priority_mean)
     #             ns_.append(ns_mean)
     #
-    #             if i % 100 == 0:
+    #             if i % 1000 == 0:
     #                 writer.add_summary(summary, i)
     #
     #             # Save the variables to disk
-    #             if i % 100 == 0 and i != 0:
+    #             if i % 1000 == 0 and i != 0:
     #                 save_path = saver.save(sess, "save/" + config.save_to + "/tmp.ckpt", global_step=i)
     #                 print("\n Model saved in file: %s" % save_path)
     #
@@ -137,6 +145,7 @@ def main():
 
     ga_result, ga_cpu_result, ga_io_result, ga_bandwidth_result, ga_memory_result, ga_task_priority_result, ga_ns_result \
         = do_ga(input_batch)
+
     # ga_result = ga_cpu_result = ga_io_result = ga_bandwidth_result = ga_memory_result = ga_task_priority_result = ga_ns_result = []
     # rand_result, rand_server_ratio_result, rand_task_priority_result, rand_ns_result = do_rand(input_batch)
 

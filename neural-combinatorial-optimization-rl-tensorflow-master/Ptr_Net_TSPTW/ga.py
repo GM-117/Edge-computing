@@ -60,10 +60,10 @@ class Chromosome:
         task_priority_sum = 0
         for idx in range(tasks_num):
             i = self.genes[idx]
-            cpu = tasks[i][0]
-            io = tasks[i][1]
-            bandwidth = tasks[i][2]
-            memory = tasks[i][3]
+            cpu = tasks[i][0] * 4
+            io = tasks[i][1] * 4
+            bandwidth = tasks[i][2] * 4
+            memory = tasks[i][3] * 4
             task_priority = tasks[i][4]
             timeout = tasks[i][5]
             time_use = tasks[i][6]
@@ -81,16 +81,23 @@ class Chromosome:
             if timeout < time_used:
                 ns_ += 1
 
-        reward_1 = alpha * (alpha_c * cpu_sum + alpha_o * io_sum + alpha_b * bandwidth_sum + alpha_m * memory_sum)
-        reward_2 = beta * task_priority_sum / tasks_num
-        reward_3 = gama * (ns_ / tasks_num)
+        cpu_sum = cpu_sum / (tasks_num / 4)
+        io_sum = io_sum / (tasks_num / 4)
+        bandwidth_sum = bandwidth_sum / (tasks_num / 4)
+        memory_sum = memory_sum / (tasks_num / 4)
+        task_priority_sum = task_priority_sum / (tasks_num / 4)
+        ns_prob = ns_ / tasks_num
+
+        reward_1 = 0.25 * (cpu_sum + io_sum + bandwidth_sum + memory_sum)
+        reward_2 = task_priority_sum
+        reward_3 = ns_prob
         self.fitness = reward_1 + reward_2 + reward_3
         self.cpu_sum = cpu_sum
         self.io_sum = io_sum
         self.bandwidth_sum = bandwidth_sum
         self.memory_sum = memory_sum
         self.task_priority = task_priority_sum
-        self.ns = ns_ / tasks_num
+        self.ns = ns_prob
 
 
 class GaAllocate:

@@ -1,5 +1,8 @@
 import numpy as np
+from Ptr_Net_TSPTW.config import get_config
+from Ptr_Net_TSPTW.dataset import DataGenerator
 
-max_length = 10
-
-print(0.3*(0.25*(2.303616220371294 + 2.8852049876333905+2.59534201539759+2.715836776597725)))
+config, _ = get_config()
+training_set = DataGenerator(config)
+input_instance = training_set.gen_instance()
+print(input_instance)
