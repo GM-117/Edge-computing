@@ -9,7 +9,7 @@ chromosome_num = 50
 tasks = []
 tasks_num = config.max_length
 # 迭代轮数
-gen_num = config.nb_epoch
+gen_num = config.gen_num
 
 alpha = config.alpha
 beta = config.beta
