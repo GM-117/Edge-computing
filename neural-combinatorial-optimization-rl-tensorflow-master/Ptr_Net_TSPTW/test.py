@@ -1,8 +1,9 @@
-import numpy as np
-from Ptr_Net_TSPTW.config import get_config
-from Ptr_Net_TSPTW.dataset import DataGenerator
+import tensorflow as tf
 
-config, _ = get_config()
-training_set = DataGenerator(config)
-input_instance = training_set.gen_instance()
-print(input_instance)
+a = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=[2, 3], name='a')
+b = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=[3, 2], name='b')
+c = tf.matmul(a, b)
+
+sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+
+print(sess.run(c))

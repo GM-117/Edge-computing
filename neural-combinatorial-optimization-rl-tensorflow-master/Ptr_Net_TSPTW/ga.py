@@ -229,7 +229,7 @@ def do_ga(input_batch):
     task_priority_result_batch = []
     ns_result_batch = []
 
-    for task in tqdm(input_batch):
+    for task in tqdm(input_batch[:32]):
         ga = GaAllocate(task)
         result, cpu_result, io_result, bandwidth_result, memory_result, task_priority_result, ns_result = ga.train()
         result_batch.append(result)

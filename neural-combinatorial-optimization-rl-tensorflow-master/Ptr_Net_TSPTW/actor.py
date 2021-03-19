@@ -214,7 +214,7 @@ class Actor(object):
                                     tf.cast(self.memory_sum, tf.float32))
             self.reward_2 = tf.cast(self.task_priority_sum, tf.float32)
             self.reward_3 = tf.cast(self.ns_prob, tf.float32)
-            self.reward = self.reward_1
+            self.reward = self.reward_1 + self.reward_2 + self.reward_3
             self.result = self.reward_1 + self.reward_2 + self.reward_3
             variable_summaries('reward', self.reward, with_max_min=True)
 

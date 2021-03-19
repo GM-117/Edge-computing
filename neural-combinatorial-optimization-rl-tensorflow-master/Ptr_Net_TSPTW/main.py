@@ -71,19 +71,19 @@ def main():
                 feed = {actor.input_: input_batch}
 
                 # Forward pass & train step
-                reward, cpu_sum, io_sum, bandwidth_sum, memory_sum, task_priority_sum, ns, summary, train_step1, train_step2, train_step1_task, train_step2_task, train_step1_time, train_step2_time = sess.run(
-                    [actor.result, actor.cpu_sum, actor.io_sum, actor.bandwidth_sum, actor.memory_sum,
+                # reward, cpu_sum, io_sum, bandwidth_sum, memory_sum, task_priority_sum, ns, summary, train_step1_task, train_step2_task, train_step1_time, train_step2_time, train_step1, train_step2 = sess.run(
+                #     [actor.result, actor.cpu_sum, actor.io_sum, actor.bandwidth_sum, actor.memory_sum,
+                #      actor.task_priority_sum, actor.ns_prob, actor.merged,
+                #      actor.train_step1_task, actor.train_step2_task, actor.train_step1_time, actor.train_step2_time,
+                #      actor.train_step1, actor.train_step2],
+                #     feed_dict=feed)
+
+                reward, cpu_sum, io_sum, bandwidth_sum, memory_sum, task_priority_sum, ns, summary, train_step1, train_step2 = sess.run(
+                    [actor.reward, actor.cpu_sum, actor.io_sum, actor.bandwidth_sum, actor.memory_sum,
                      actor.task_priority_sum, actor.ns_prob, actor.merged,
                      actor.train_step1, actor.train_step2,
-                     actor.train_step1_task, actor.train_step2_task, actor.train_step1_time, actor.train_step2_time],
+                     ],
                     feed_dict=feed)
-
-                # reward, cpu_sum, io_sum, bandwidth_sum, memory_sum, task_priority_sum, ns, summary, train_step1, train_step2 = sess.run(
-                #     [actor.reward, actor.cpu_sum, actor.io_sum, actor.bandwidth_sum, actor.memory_sum,
-                #      actor.task_priority_sum, actor.ns_prob, actor.merged,
-                #      actor.train_step1, actor.train_step2,
-                #      ],
-                #     feed_dict=feed)
 
                 reward_mean = np.mean(reward)
                 cpu_mean = np.mean(cpu_sum)
