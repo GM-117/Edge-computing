@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import tensorflow as tf
+import time
 import numpy as np
 from numpy import *
 import matplotlib.pyplot as plt
@@ -114,10 +115,11 @@ def main():
 
         # 测试
         else:
+
             predictions = []
             # Get feed_dict (single input)
             feed = {actor.input_: input_batch}
-
+            time_start = time.time()
             # Sample solutions
             reward, cpu_sum, io_sum, bandwidth_sum, memory_sum, task_priority_sum, ns, summary, train_step1, train_step2, train_step1_task, train_step2_task, train_step1_time, train_step2_time = sess.run(
                 [actor.result, actor.cpu_sum, actor.io_sum, actor.bandwidth_sum, actor.memory_sum,
@@ -125,6 +127,8 @@ def main():
                  actor.train_step1, actor.train_step2,
                  actor.train_step1_task, actor.train_step2_task, actor.train_step1_time, actor.train_step2_time],
                 feed_dict=feed)
+            time_end = time.time()
+            print("ptr: ", time_end - time_start)
 
             reward_mean = np.mean(reward)
             cpu_mean = np.mean(cpu_sum)
@@ -146,7 +150,8 @@ def main():
         = do_ga(input_batch)
 
     # ga_result = ga_cpu_result = ga_io_result = ga_bandwidth_result = ga_memory_result = ga_task_priority_result = ga_ns_result = []
-    rand_result, rand_server_ratio_result, rand_task_priority_result, rand_ns_result = do_rand(input_batch)
+    rand_result, rand_cpu_result, rand_io_result, rand_bandwidth_result, rand_memory_result, rand_task_priority_result, rand_ns_result = do_rand(
+        input_batch)
 
     # 解决中文显示问题
     plt.rcParams['font.sans-serif'] = ['KaiTi']  # 指定默认字体
@@ -225,6 +230,13 @@ def main():
     print('目标1.4：内存', mean(ga_memory_result[-10:]))
     print('目标2：任务优先级', mean(ga_task_priority_result[-10:]))
     print('目标3：超时率', mean(ga_ns_result[-10:]))
+    print('rand')
+    print('目标1.1：CPU', mean(rand_cpu_result[-10:]))
+    print('目标1.2：I/O', mean(rand_io_result[-10:]))
+    print('目标1.3：带宽', mean(rand_bandwidth_result[-10:]))
+    print('目标1.4：内存', mean(rand_memory_result[-10:]))
+    print('目标2：任务优先级', mean(rand_task_priority_result[-10:]))
+    print('目标3：超时率', mean(rand_ns_result[-10:]))
 
 
 if __name__ == "__main__":
