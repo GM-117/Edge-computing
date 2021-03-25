@@ -6,7 +6,7 @@ from Ptr_Net_TSPTW.config import get_config
 
 config, _ = get_config()
 
-chromosome_num = 50
+chromosome_num = 100
 tasks = []
 tasks_num = config.max_length
 # 迭代轮数
@@ -92,7 +92,7 @@ class Chromosome:
         reward_1 = 0.25 * (cpu_sum + io_sum + bandwidth_sum + memory_sum)
         reward_2 = task_priority_sum
         reward_3 = ns_prob
-        self.fitness = reward_1 + reward_2 + reward_3
+        self.fitness = reward_2 + reward_3
         self.cpu_sum = cpu_sum
         self.io_sum = io_sum
         self.bandwidth_sum = bandwidth_sum
@@ -144,7 +144,6 @@ class GaAllocate:
 
     @staticmethod
     def mutate(genes):
-        # 随便改一个
         index1 = random.randint(0, tasks_num - 2)
         index2 = random.randint(index1, tasks_num - 1)
         genes_left = genes[:index1]
@@ -230,7 +229,7 @@ def do_ga(input_batch):
     task_priority_result_batch = []
     ns_result_batch = []
 
-    for task in tqdm(input_batch[:1]):
+    for task in tqdm(input_batch):
         time_start = time.time()
         ga = GaAllocate(task)
         result, cpu_result, io_result, bandwidth_result, memory_result, task_priority_result, ns_result = ga.train()

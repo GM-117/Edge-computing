@@ -22,7 +22,7 @@ net_arg.add_argument('--hidden_dim', type=int, default=128, help='actor LSTM num
 
 # Data
 data_arg = add_argument_group('Data')
-data_arg.add_argument('--batch_size', type=int, default=128
+data_arg.add_argument('--batch_size', type=int, default=32
                       , help='batch size')
 data_arg.add_argument('--input_dimension', type=int, default=7, help='data dimension')
 data_arg.add_argument('--max_length', type=int, default=20, help='number of task')  # this excludes depot
@@ -31,7 +31,7 @@ data_arg.add_argument('--dir_', type=str, default='n20w100', help='Dumas benchma
 # Training / test parameters
 train_arg = add_argument_group('Training')
 train_arg.add_argument('--gen_num', type=int, default=300, help='ga gen num')
-train_arg.add_argument('--nb_epoch', type=int, default=1000, help='nb epoch')
+train_arg.add_argument('--nb_epoch', type=int, default=2000, help='nb epoch')
 train_arg.add_argument('--lr1_start', type=float, default=0.0001, help='actor learning rate')
 train_arg.add_argument('--lr1_decay_step', type=int, default=100, help='lr1 decay step')
 train_arg.add_argument('--lr1_decay_rate', type=float, default=0.96, help='lr1 decay rate')
@@ -54,7 +54,7 @@ misc_arg = add_argument_group('User options')
 misc_arg.add_argument('--pretrain', type=str2bool, default=False, help='faster datagen for infinite speed')
 misc_arg.add_argument('--inference_mode', type=str2bool, default=False,
                       help='switch to inference mode when model is trained')
-misc_arg.add_argument('--restore_model', type=str2bool, default=True, help='whether or not model is retrieved')
+misc_arg.add_argument('--restore_model', type=str2bool, default=False, help='whether or not model is retrieved')
 
 misc_arg.add_argument('--save_to', type=str, default='speed1000/n20w100',
                       help='saver sub directory')

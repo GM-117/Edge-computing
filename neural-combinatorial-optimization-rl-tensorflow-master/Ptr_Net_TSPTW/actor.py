@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.contrib.rnn import LSTMCell, MultiRNNCell, DropoutWrapper
+import copy
 import numpy as np
 from tqdm import tqdm
 
@@ -68,6 +69,7 @@ class Actor(object):
         self.input_ = tf.placeholder(tf.float32, [self.batch_size, self.max_length, self.input_dimension],
                                      name="input_raw")
         self.weight_list = self.build_weight_list()
+        self.batch_idx = 0
 
         self.build_permutation()
         self.build_critic()
@@ -133,6 +135,47 @@ class Actor(object):
             # 得出self.critic.predictions
             variable_summaries('predictions_time', self.critic_time_.predictions, with_max_min=True)
 
+    def cond(self, server_remain, need):
+        c_ = tf.less(server_remain, need)
+        c_ = tf.logical_or(tf.logical_or(c_[0], c_[1]), tf.logical_or(c_[2], c_[3]))
+        return c_
+
+    def body(self, server_remain, need):
+        self.server_run = self.server_run_map
+        self.min_task_idx = tf.argmin(self.server_run, axis=0)[-1]
+        self.min_task_idx = tf.cast(self.min_task_idx, dtype=tf.int32)  # 找最近完成的任务
+        self.min_task = self.server_run[self.min_task_idx]
+        self.min_need = self.min_task[:4]
+        self.min_time = self.min_task[-1]
+
+        self.time_used[self.batch_idx] += 1  # 更新时间
+
+        self.server_run = tf.transpose(self.server_run, [1, 0])
+        self.server_run = tf.unstack(self.server_run)
+        self.server_run[-1] -= self.min_time
+        self.server_run = tf.stack(self.server_run)
+        self.server_run = tf.transpose(self.server_run, [1, 0])
+
+        part1 = self.server_run[:self.min_task_idx]
+        part2 = self.server_run[self.min_task_idx + 1:]
+        #self.server_run_map = tf.concat([part1, part2], axis=0) # 删除任务
+        self.task_num -= 1
+
+        server_remain += self.min_need
+        return server_remain, need
+
+    def f1(self):
+        self.timeout_count[self.batch_idx] += 1
+        return self.timeout_count
+
+    def f2(self):
+        self.server_remain, self.need = tf.while_loop(self.cond, self.body,
+                                                      [self.server_remain, self.need])
+        self.server_run_map = tf.concat([self.server_run_map, self.task], axis=0)
+        self.server_remain -= self.need  # 更新服务器剩余容量
+        self.task_num += 1  # 更新服务器正在运行的任务数
+        return self.timeout_count
+
     def build_reward(self):
         with tf.name_scope('permutations'):
             # Reorder input % tour
@@ -146,77 +189,119 @@ class Actor(object):
             )
             # 对input排序
             self.ordered_input_ = tf.gather_nd(self.input_, self.permutations)
-            self.ordered_input_ = tf.transpose(self.ordered_input_, [2, 1,
-                                                                     0])  # [batch size, seq length , features] to [features, seq length, batch_size]
-
-            # cpu
-            cpu = self.ordered_input_[0] * 4
-            # io
-            io = self.ordered_input_[1] * 4
-            # bandwidth
-            bandwidth = self.ordered_input_[2] * 4
-            # memory
-            memory = self.ordered_input_[3] * 4
+            self.ordered_input_trans = tf.transpose(self.ordered_input_, [2, 1,
+                                                                          0])  # [batch size, seq length , features] to [features, seq length, batch_size]
             # 优先级 λ
-            task_priority = self.ordered_input_[4]
-            # 超时时间 t
-            timeout = self.ordered_input_[5]
-            # 任务所需时间 ts
-            time_use = self.ordered_input_[6]
+            task_priority = self.ordered_input_trans[4]
+
+        # with tf.name_scope('environment'):
+        #     # 计算带权服务器利用率
+        #     cpu_weight = tf.multiply(cpu, self.weight_list)
+        #     self.cpu_sum = tf.reduce_sum(cpu_weight, axis=0)  # [batch_size]
+        #     self.cpu_sum = self.cpu_sum / (self.max_length / 4)
+        #
+        #     io_weight = tf.multiply(io, self.weight_list)
+        #     self.io_sum = tf.reduce_sum(io_weight, axis=0)  # [batch_size]
+        #     self.io_sum = self.io_sum / (self.max_length / 4)
+        #
+        #     bandwidth_weight = tf.multiply(bandwidth, self.weight_list)
+        #     self.bandwidth_sum = tf.reduce_sum(bandwidth_weight, axis=0)  # [batch_size]
+        #     self.bandwidth_sum = self.bandwidth_sum / (self.max_length / 4)
+        #
+        #     memory_weight = tf.multiply(memory, self.weight_list)
+        #     self.memory_sum = tf.reduce_sum(memory_weight, axis=0)  # [batch_size]
+        #     self.memory_sum = self.memory_sum / (self.max_length / 4)
+        #
+        #     # 求每组样本的λ最大值
+        #     priority_max = tf.reduce_max(task_priority, axis=0)
+        #     # 归一化
+        #     task_priority = tf.divide(task_priority, priority_max)
+        #     # 带权
+        #     task_priority_weight = tf.multiply(task_priority, self.weight_list)
+        #     # 求和
+        #     self.task_priority_sum = tf.reduce_sum(task_priority_weight, axis=0)  # [batch_size]
+        #     # 0.25n
+        #     self.task_priority_sum = self.task_priority_sum / (self.max_length / 4)
+        #
+        #     # 计算超时率
+        #     ns = tf.constant([0 for i in range(self.batch_size)], dtype=tf.float32, shape=[1, self.batch_size])
+        #     t_sum = tf.constant([0 for i in range(self.batch_size)], dtype=tf.float32, shape=[1, self.batch_size])
+        #     for to, tu in zip(tf.unstack(timeout), tf.unstack(time_use)):
+        #         t_sum = tf.add(t_sum, tu)
+        #         ts = tf.maximum(t_sum - to, tf.zeros([1, self.batch_size], dtype=tf.float32))
+        #         temp = tf.count_nonzero(ts, axis=0, dtype=tf.float32)
+        #         # 统计超时数
+        #         ns = tf.add(ns, temp)
+        #     # 计算超时率
+        #     ns_prob = tf.divide(ns, self.max_length)
+        #     self.ns_prob = tf.reshape(ns_prob, [self.batch_size])
+        #     self.ns = tf.reshape(ns, [self.batch_size])
+        #
+        #     # 定义reward函数
+        #     self.reward_1 = 0.25 * (tf.cast(self.cpu_sum, tf.float32) +
+        #                             tf.cast(self.io_sum, tf.float32) +
+        #                             tf.cast(self.bandwidth_sum, tf.float32) +
+        #                             tf.cast(self.memory_sum, tf.float32))
+        #     self.reward_2 = tf.cast(self.task_priority_sum, tf.float32)
+        #     self.reward_3 = tf.cast(self.ns_prob, tf.float32)
+        #     self.reward = self.reward_2 + self.reward_3
+        #     self.result = self.reward_1 + self.reward_2 + self.reward_3
+        #     variable_summaries('reward', self.reward, with_max_min=True)
 
         with tf.name_scope('environment'):
-            # 计算带权服务器利用率
-            cpu_weight = tf.multiply(cpu, self.weight_list)
-            self.cpu_sum = tf.reduce_sum(cpu_weight, axis=0)  # [batch_size]
-            self.cpu_sum = self.cpu_sum / (self.max_length / 4)
+            self.time_used = [tf.constant(0, dtype=tf.float32)] * self.batch_size  # [batch_size]  # 已用时间
+            self.timeout_count = [tf.constant(0, dtype=tf.float32)] * self.batch_size  # [batch_size]  # 超时数
+           
+            for self.batch_idx, instance in enumerate(tf.unstack(self.ordered_input_)):
+                self.instance = instance  # self.batch_idx:[max_length, input_dimension]
+                self.task_num = tf.constant(0, dtype=tf.int32)  # 已有任务数
+                self.server_run_map = None # 服务器正在运行的任务列表
+                self.server_remain = tf.constant([1, 1, 1, 1], dtype=tf.float32) # 服务器剩余容量
+                # 将任务依次载入服务器
+                for task_idx, task in enumerate(tf.unstack(self.instance)):
+                    self.task = task  # [input_dimension]
+                    self.need = self.task[:4]
+                    time_out = self.task[5]
+                    time_need = self.task[6]
+                    self.task = tf.stack([self.task])
 
-            io_weight = tf.multiply(io, self.weight_list)
-            self.io_sum = tf.reduce_sum(io_weight, axis=0)  # [batch_size]
-            self.io_sum = self.io_sum / (self.max_length / 4)
+                    if task_idx == 0:
+                        self.server_run_map = self.task
+                        self.server_remain -= self.need
+                        self.task_num += 1
+                        continue
 
-            bandwidth_weight = tf.multiply(bandwidth, self.weight_list)
-            self.bandwidth_sum = tf.reduce_sum(bandwidth_weight, axis=0)  # [batch_size]
-            self.bandwidth_sum = self.bandwidth_sum / (self.max_length / 4)
+                    self.f1()
+                    self.f2()
+                    # self.timeout_count = tf.cond(tf.less(time_out, self.time_used[self.batch_idx] + time_need),
+                    #                             lambda: self.f1(), lambda: self.f2(task))
 
-            memory_weight = tf.multiply(memory, self.weight_list)
-            self.memory_sum = tf.reduce_sum(memory_weight, axis=0)  # [batch_size]
-            self.memory_sum = self.memory_sum / (self.max_length / 4)
+                # 所有任务载入完成
+                self.max_time = tf.reduce_max(self.server_run_map, axis=0)[-1]
+                self.time_used[self.batch_idx] += 1  # 更新当前时间
+                print(self.time_used[self.batch_idx])
 
-            # 求每组样本的λ最大值
-            priority_max = tf.reduce_max(task_priority, axis=0)
-            # 归一化
-            task_priority = tf.divide(task_priority, priority_max)
-            # 带权
-            task_priority_weight = tf.multiply(task_priority, self.weight_list)
-            # 求和
-            self.task_priority_sum = tf.reduce_sum(task_priority_weight, axis=0)  # [batch_size]
-            # 0.25n
-            self.task_priority_sum = self.task_priority_sum / (self.max_length / 4)
+            self.time_used = self.time_used
+            self.time_use = tf.stack(self.time_used)  # 时间
+            self.ns_prob = tf.stack(self.timeout_count) / self.max_length  # 超时率
 
-            # 计算超时率
-            ns = tf.constant([0 for i in range(self.batch_size)], dtype=tf.float32, shape=[1, self.batch_size])
-            t_sum = tf.constant([0 for i in range(self.batch_size)], dtype=tf.float32, shape=[1, self.batch_size])
-            for to, tu in zip(tf.unstack(timeout), tf.unstack(time_use)):
-                t_sum = tf.add(t_sum, tu)
-                ts = tf.maximum(t_sum - to, tf.zeros([1, self.batch_size], dtype=tf.float32))
-                temp = tf.count_nonzero(ts, axis=0, dtype=tf.float32)
-                # 统计超时数
-                ns = tf.add(ns, temp)
-            # 计算超时率
-            ns_prob = tf.divide(ns, self.max_length)
-            self.ns_prob = tf.reshape(ns_prob, [self.batch_size])
-            self.ns = tf.reshape(ns, [self.batch_size])
+            priority_max = tf.reduce_max(task_priority, axis=0)  # 求每组样本的λ最大值
+            task_priority = tf.divide(task_priority, priority_max)  # 归一化
+            task_priority_weight = tf.multiply(task_priority, self.weight_list)  # 带权
+            self.task_priority_sum = tf.reduce_sum(task_priority_weight, axis=0)  # [batch_size]# 求和
+            self.task_priority_sum = self.task_priority_sum / (self.max_length / 4)  # 0.25n
 
-            # 定义reward函数
-            self.reward_1 = 0.25 * (tf.cast(self.cpu_sum, tf.float32) +
-                                    tf.cast(self.io_sum, tf.float32) +
-                                    tf.cast(self.bandwidth_sum, tf.float32) +
-                                    tf.cast(self.memory_sum, tf.float32))
-            self.reward_2 = tf.cast(self.task_priority_sum, tf.float32)
-            self.reward_3 = tf.cast(self.ns_prob, tf.float32)
-            self.reward = self.reward_1 + self.reward_2 + self.reward_3
-            self.result = self.reward_1 + self.reward_2 + self.reward_3
+            print(self.time_use)
+            print(self.task_priority_sum)
+            print(self.ns_prob)
+
+            self.reward = tf.cast(self.time_use, tf.float32)  # 运行时间
+            self.reward_2 = tf.cast(self.task_priority_sum, tf.float32)  # 任务优先级
+            self.reward_3 = tf.cast(self.ns_prob, tf.float32)  # 超时率
+            self.result = self.reward + self.reward_2 + self.reward_3
             variable_summaries('reward', self.reward, with_max_min=True)
+            variable_summaries('reward_2', self.reward_2, with_max_min=True)
+            variable_summaries('reward_3', self.reward_3, with_max_min=True)
 
     def build_optim(self):
         # Update moving_mean and moving_variance for batch normalization layers

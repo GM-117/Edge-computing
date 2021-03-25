@@ -41,6 +41,7 @@ def main():
     saver = tf.train.Saver(var_list=variables_to_save, keep_checkpoint_every_n_hours=1.0)
 
     predictions = []
+    time_used = []
     cpu = []
     io = []
     bandwidth = []
@@ -70,7 +71,7 @@ def main():
             for i in tqdm(range(config.nb_epoch)):
                 # Get feed dict
                 feed = {actor.input_: input_batch}
-
+                input_batch = training_set.train_batch()
                 # Forward pass & train step
                 # reward, cpu_sum, io_sum, bandwidth_sum, memory_sum, task_priority_sum, ns, summary, train_step1_task, train_step2_task, train_step1_time, train_step2_time, train_step1, train_step2 = sess.run(
                 #     [actor.result, actor.cpu_sum, actor.io_sum, actor.bandwidth_sum, actor.memory_sum,
@@ -79,26 +80,41 @@ def main():
                 #      actor.train_step1, actor.train_step2],
                 #     feed_dict=feed)
 
-                reward, cpu_sum, io_sum, bandwidth_sum, memory_sum, task_priority_sum, ns, summary, train_step1, train_step2 = sess.run(
-                    [actor.reward, actor.cpu_sum, actor.io_sum, actor.bandwidth_sum, actor.memory_sum,
-                     actor.task_priority_sum, actor.ns_prob, actor.merged,
+                # reward, cpu_sum, io_sum, bandwidth_sum, memory_sum, task_priority_sum, ns, summary, train_step1_task, train_step2_task, train_step1_time, train_step2_time = sess.run(
+                #     [actor.reward, actor.cpu_sum, actor.io_sum, actor.bandwidth_sum, actor.memory_sum,
+                #      actor.task_priority_sum, actor.ns_prob, actor.merged,
+                #      actor.train_step1_task, actor.train_step2_task, actor.train_step1_time, actor.train_step2_time],
+                #     feed_dict=feed)
+
+                result, time_use, task_priority_sum, ns_prob, summary, train_step1, train_step2, train_step1_task, train_step2_task, train_step1_time, train_step2_time = sess.run(
+                    [actor.result, actor.time_use, actor.task_priority_sum, actor.ns_prob, actor.merged,
                      actor.train_step1, actor.train_step2,
-                     ],
+                     actor.train_step1_task, actor.train_step2_task, actor.train_step1_time, actor.train_step2_time],
                     feed_dict=feed)
 
-                reward_mean = np.mean(reward)
-                cpu_mean = np.mean(cpu_sum)
-                io_mean = np.mean(io_sum)
-                bandwidth_mean = np.mean(bandwidth_sum)
-                memory_mean = np.mean(memory_sum)
+                # reward_mean = np.mean(reward)
+                # cpu_mean = np.mean(cpu_sum)
+                # io_mean = np.mean(io_sum)
+                # bandwidth_mean = np.mean(bandwidth_sum)
+                # memory_mean = np.mean(memory_sum)
+                # task_priority_mean = np.mean(task_priority_sum)
+                # ns_mean = np.mean(ns)
+                #
+                # predictions.append(reward_mean)
+                # cpu.append(cpu_mean)
+                # io.append(io_mean)
+                # bandwidth.append(bandwidth_mean)
+                # memory.append(memory_mean)
+                # task_priority.append(task_priority_mean)
+                # ns_.append(ns_mean)
+
+                reward_mean = np.mean(result)
+                time_mean = np.mean(time_use)
                 task_priority_mean = np.mean(task_priority_sum)
-                ns_mean = np.mean(ns)
+                ns_mean = np.mean(ns_prob)
 
                 predictions.append(reward_mean)
-                cpu.append(cpu_mean)
-                io.append(io_mean)
-                bandwidth.append(bandwidth_mean)
-                memory.append(memory_mean)
+                time_used.append(time_mean)
                 task_priority.append(task_priority_mean)
                 ns_.append(ns_mean)
 
@@ -121,37 +137,54 @@ def main():
             feed = {actor.input_: input_batch}
             time_start = time.time()
             # Sample solutions
-            reward, cpu_sum, io_sum, bandwidth_sum, memory_sum, task_priority_sum, ns, summary, train_step1, train_step2, train_step1_task, train_step2_task, train_step1_time, train_step2_time = sess.run(
-                [actor.result, actor.cpu_sum, actor.io_sum, actor.bandwidth_sum, actor.memory_sum,
-                 actor.task_priority_sum, actor.ns_prob, actor.merged,
+            # reward, cpu_sum, io_sum, bandwidth_sum, memory_sum, task_priority_sum, ns, summary, train_step1, train_step2, train_step1_task, train_step2_task, train_step1_time, train_step2_time = sess.run(
+            #     [actor.result, actor.cpu_sum, actor.io_sum, actor.bandwidth_sum, actor.memory_sum,
+            #      actor.task_priority_sum, actor.ns_prob, actor.merged,
+            #      actor.train_step1, actor.train_step2,
+            #      actor.train_step1_task, actor.train_step2_task, actor.train_step1_time, actor.train_step2_time],
+            #     feed_dict=feed)
+            result, time_used, task_priority_sum, ns_prob, summary, train_step1, train_step2, train_step1_task, train_step2_task, train_step1_time, train_step2_time = sess.run(
+                [actor.result, actor.time_used, actor.task_priority_sum, actor.ns_prob, actor.merged,
                  actor.train_step1, actor.train_step2,
                  actor.train_step1_task, actor.train_step2_task, actor.train_step1_time, actor.train_step2_time],
                 feed_dict=feed)
             time_end = time.time()
             print("ptr: ", time_end - time_start)
 
-            reward_mean = np.mean(reward)
-            cpu_mean = np.mean(cpu_sum)
-            io_mean = np.mean(io_sum)
-            bandwidth_mean = np.mean(bandwidth_sum)
-            memory_mean = np.mean(memory_sum)
+            # reward_mean = np.mean(reward)
+            # cpu_mean = np.mean(cpu_sum)
+            # io_mean = np.mean(io_sum)
+            # bandwidth_mean = np.mean(bandwidth_sum)
+            # memory_mean = np.mean(memory_sum)
+            # task_priority_mean = np.mean(task_priority_sum)
+            # ns_mean = np.mean(ns)
+            #
+            # predictions.append(reward_mean)
+            # cpu.append(cpu_mean)
+            # io.append(io_mean)
+            # bandwidth.append(bandwidth_mean)
+            # memory.append(memory_mean)
+            # task_priority.append(task_priority_mean)
+            # ns_.append(ns_mean)
+
+            reward_mean = np.mean(result)
+            time_mean = np.mean(time_used)
             task_priority_mean = np.mean(task_priority_sum)
-            ns_mean = np.mean(ns)
+            ns_mean = np.mean(ns_prob)
 
             predictions.append(reward_mean)
-            cpu.append(cpu_mean)
-            io.append(io_mean)
-            bandwidth.append(bandwidth_mean)
-            memory.append(memory_mean)
+            time_used.append(time_mean)
             task_priority.append(task_priority_mean)
             ns_.append(ns_mean)
 
-    ga_result, ga_cpu_result, ga_io_result, ga_bandwidth_result, ga_memory_result, ga_task_priority_result, ga_ns_result \
-        = do_ga(input_batch)
+    # ga_result, ga_cpu_result, ga_io_result, ga_bandwidth_result, ga_memory_result, ga_task_priority_result, ga_ns_result \
+    #    = do_ga(input_batch)
 
-    # ga_result = ga_cpu_result = ga_io_result = ga_bandwidth_result = ga_memory_result = ga_task_priority_result = ga_ns_result = []
-    rand_result, rand_cpu_result, rand_io_result, rand_bandwidth_result, rand_memory_result, rand_task_priority_result, rand_ns_result = do_rand(
-        input_batch)
+    ga_result = ga_cpu_result = ga_io_result = ga_bandwidth_result = ga_memory_result = ga_task_priority_result = ga_ns_result = []
+    # rand_result, rand_cpu_result, rand_io_result, rand_bandwidth_result, rand_memory_result, rand_task_priority_result, rand_ns_result = do_rand(
+    #    input_batch)
+
+    rand_result = rand_cpu_result = rand_io_result = rand_bandwidth_result = rand_memory_result = rand_task_priority_result = rand_ns_result = []
 
     # 解决中文显示问题
     plt.rcParams['font.sans-serif'] = ['KaiTi']  # 指定默认字体
@@ -165,34 +198,42 @@ def main():
     plt.legend()
     fig.show()
 
-    fig = plt.figure()
-    plt.plot(list(range(len(cpu))), cpu, c='red', label=u'指针网络')
-    plt.plot(list(range(len(ga_cpu_result))), ga_cpu_result, c='blue', label=u'遗传算法')
-    plt.title(u"目标1.1：CPU")
-    plt.xlabel('轮数')
-    plt.legend()
-    fig.show()
+    # fig = plt.figure()
+    # plt.plot(list(range(len(cpu))), cpu, c='red', label=u'指针网络')
+    # plt.plot(list(range(len(ga_cpu_result))), ga_cpu_result, c='blue', label=u'遗传算法')
+    # plt.title(u"目标1.1：CPU")
+    # plt.xlabel('轮数')
+    # plt.legend()
+    # fig.show()
+    #
+    # fig = plt.figure()
+    # plt.plot(list(range(len(io))), io, c='red', label=u'指针网络')
+    # plt.plot(list(range(len(ga_io_result))), ga_io_result, c='blue', label=u'遗传算法')
+    # plt.title(u"目标1.2：I/O")
+    # plt.xlabel('轮数')
+    # plt.legend()
+    # fig.show()
+    #
+    # fig = plt.figure()
+    # plt.plot(list(range(len(bandwidth))), bandwidth, c='red', label=u'指针网络')
+    # plt.plot(list(range(len(ga_bandwidth_result))), ga_bandwidth_result, c='blue', label=u'遗传算法')
+    # plt.title(u"目标1.3：带宽")
+    # plt.xlabel('轮数')
+    # plt.legend()
+    # fig.show()
+    #
+    # fig = plt.figure()
+    # plt.plot(list(range(len(memory))), memory, c='red', label=u'指针网络')
+    # plt.plot(list(range(len(ga_memory_result))), ga_memory_result, c='blue', label=u'遗传算法')
+    # plt.title(u"目标1.4：内存")
+    # plt.xlabel('轮数')
+    # plt.legend()
+    # fig.show()
 
     fig = plt.figure()
-    plt.plot(list(range(len(io))), io, c='red', label=u'指针网络')
-    plt.plot(list(range(len(ga_io_result))), ga_io_result, c='blue', label=u'遗传算法')
-    plt.title(u"目标1.2：I/O")
-    plt.xlabel('轮数')
-    plt.legend()
-    fig.show()
-
-    fig = plt.figure()
-    plt.plot(list(range(len(bandwidth))), bandwidth, c='red', label=u'指针网络')
-    plt.plot(list(range(len(ga_bandwidth_result))), ga_bandwidth_result, c='blue', label=u'遗传算法')
-    plt.title(u"目标1.3：带宽")
-    plt.xlabel('轮数')
-    plt.legend()
-    fig.show()
-
-    fig = plt.figure()
-    plt.plot(list(range(len(memory))), memory, c='red', label=u'指针网络')
-    plt.plot(list(range(len(ga_memory_result))), ga_memory_result, c='blue', label=u'遗传算法')
-    plt.title(u"目标1.4：内存")
+    plt.plot(list(range(len(time_used))), time_used, c='red', label=u'指针网络')
+    plt.plot(list(range(len([]))), [], c='blue', label=u'遗传算法')
+    plt.title(u"目标1：运行时间")
     plt.xlabel('轮数')
     plt.legend()
     fig.show()
@@ -213,30 +254,30 @@ def main():
     plt.legend()
     fig.show()
 
-    print('task:', config.max_length)
-    print('gen_num:', config.gen_num)
-    print('nb_epoch:', config.nb_epoch)
-    print('ptr')
-    print('目标1.1：CPU', mean(cpu[-10:]))
-    print('目标1.2：I/O', mean(io[-10:]))
-    print('目标1.3：带宽', mean(bandwidth[-10:]))
-    print('目标1.4：内存', mean(memory[-10:]))
-    print('目标2：任务优先级', mean(task_priority[-10:]))
-    print('目标3：超时率', mean(ns_[-10:]))
-    print('ga')
-    print('目标1.1：CPU', mean(ga_cpu_result[-10:]))
-    print('目标1.2：I/O', mean(ga_io_result[-10:]))
-    print('目标1.3：带宽', mean(ga_bandwidth_result[-10:]))
-    print('目标1.4：内存', mean(ga_memory_result[-10:]))
-    print('目标2：任务优先级', mean(ga_task_priority_result[-10:]))
-    print('目标3：超时率', mean(ga_ns_result[-10:]))
-    print('rand')
-    print('目标1.1：CPU', mean(rand_cpu_result[-10:]))
-    print('目标1.2：I/O', mean(rand_io_result[-10:]))
-    print('目标1.3：带宽', mean(rand_bandwidth_result[-10:]))
-    print('目标1.4：内存', mean(rand_memory_result[-10:]))
-    print('目标2：任务优先级', mean(rand_task_priority_result[-10:]))
-    print('目标3：超时率', mean(rand_ns_result[-10:]))
+    # print('task:', config.max_length)
+    # print('gen_num:', config.gen_num)
+    # print('nb_epoch:', config.nb_epoch)
+    # print('ptr')
+    # print('目标1.1：CPU', mean(cpu[-10:]))
+    # print('目标1.2：I/O', mean(io[-10:]))
+    # print('目标1.3：带宽', mean(bandwidth[-10:]))
+    # print('目标1.4：内存', mean(memory[-10:]))
+    # print('目标2：任务优先级', mean(task_priority[-10:]))
+    # print('目标3：超时率', mean(ns_[-10:]))
+    # print('ga')
+    # print('目标1.1：CPU', mean(ga_cpu_result[-10:]))
+    # print('目标1.2：I/O', mean(ga_io_result[-10:]))
+    # print('目标1.3：带宽', mean(ga_bandwidth_result[-10:]))
+    # print('目标1.4：内存', mean(ga_memory_result[-10:]))
+    # print('目标2：任务优先级', mean(ga_task_priority_result[-10:]))
+    # print('目标3：超时率', mean(ga_ns_result[-10:]))
+    # print('rand')
+    # print('目标1.1：CPU', mean(rand_cpu_result[-10:]))
+    # print('目标1.2：I/O', mean(rand_io_result[-10:]))
+    # print('目标1.3：带宽', mean(rand_bandwidth_result[-10:]))
+    # print('目标1.4：内存', mean(rand_memory_result[-10:]))
+    # print('目标2：任务优先级', mean(rand_task_priority_result[-10:]))
+    # print('目标3：超时率', mean(rand_ns_result[-10:]))
 
 
 if __name__ == "__main__":
