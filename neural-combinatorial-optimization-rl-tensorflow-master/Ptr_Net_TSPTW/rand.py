@@ -3,6 +3,8 @@ import time
 import random
 from Ptr_Net_TSPTW.config import get_config
 
+tasks = []
+
 config, _ = get_config()
 tasks_num = config.max_length
 
@@ -13,7 +15,9 @@ gama = config.gama
 gen_num = config.nb_epoch
 
 
-def get_rand_result(tasks):
+def get_rand_result(tasks_):
+    global tasks
+    tasks = tasks_
     result_idx_list = []
 
     cpu = []
@@ -70,95 +74,97 @@ def get_rand_result(tasks):
         timeout[min_idx] = 10000
         result_idx_list.append(min_idx)
 
+    return get_result(result_idx_list)
+
+
+def get_result(result_idx_list):
+    global tasks
+
     task_priority_max = 0
     for i in range(tasks_num):
-        task_priority_max = max(task_priority_max, tasks[i][1])
-    time_used = 0
-    ns_ = 0
-    cpu_sum = 0
-    io_sum = 0
-    bandwidth_sum = 0
-    memory_sum = 0
-    task_priority_sum = 0
+        task_priority_max = max(task_priority_max, tasks[i][4])
 
+    task_priority_sum = 0
     for idx in range(tasks_num):
         i = result_idx_list[idx]
-        cpu = tasks[i][0] * 4
-        io = tasks[i][1] * 4
-        bandwidth = tasks[i][2] * 4
-        memory = tasks[i][3] * 4
         task_priority = tasks[i][4]
-        timeout = tasks[i][5]
-        time_use = tasks[i][6]
-        cpu = cpu * (1 - idx / tasks_num)
-        io = io * (1 - idx / tasks_num)
-        bandwidth = bandwidth * (1 - idx / tasks_num)
-        memory = memory * (1 - idx / tasks_num)
         task_priority = (task_priority / task_priority_max) * (1 - idx / tasks_num)
-        cpu_sum += cpu
-        io_sum += io
-        bandwidth_sum += bandwidth
-        memory_sum += memory
         task_priority_sum += task_priority
-        time_used += time_use
-        if timeout < time_used:
+
+    ns_ = 0
+    time_use = 0
+    server_run_map = []
+    server_remain = [1, 1, 1, 1]
+    for idx in result_idx_list:
+        task = tasks[idx]
+        need = task[:4]
+        time_out = task[5]
+        time_need = task[6]
+
+        if time_use + time_need > time_out:  # 超时
             ns_ += 1
+            continue
 
-    cpu = cpu_sum / (tasks_num / 4)
-    io = io_sum / (tasks_num / 4)
-    bandwidth = bandwidth_sum / (tasks_num / 4)
-    memory = memory_sum / (tasks_num / 4)
-    task_priority = task_priority_sum / (tasks_num / 4)
-    ns = ns_ / tasks_num
+        while server_remain[0] < need[0] or server_remain[1] < need[1] or \
+                server_remain[2] < need[2] or server_remain[3] < need[3]:
+            server_run_map = np.array(server_run_map)
+            time_use += 1  # 更新时间
+            server_run_map[:, -1] -= 1
+            server_run_map = server_run_map.tolist()
 
-    return 0, cpu, io, bandwidth, memory, task_priority, ns
+            while len(server_run_map) > 0:  # 移除已完成的任务
+                min_task_idx = np.argmin(server_run_map, axis=0)[-1]
+                min_task = server_run_map[min_task_idx]
+                min_need = min_task[:4]
+                min_time = min_task[-1]
+                if min_time > 0:
+                    break
+                server_remain = np.add(server_remain, min_need)  # 更新剩余容量
+                del server_run_map[min_task_idx]  # 移除任务
+
+        server_run_map.append(task)  # 将新任务加入服务器
+        server_remain = np.subtract(server_remain, need)  # 更新服务器剩余容量
+
+    max_time_idx = np.argmax(server_run_map, axis=0)[-1]
+    max_time = server_run_map[max_time_idx][-1]
+    time_use += max_time
+    time_use = time_use / tasks_num
+    task_priority_sum = task_priority_sum / (tasks_num // 2)
+
+    ns_prob = ns_ / (tasks_num // 2)
+
+    return 0, time_use, task_priority_sum, ns_prob
 
 
 def do_rand(input_batch):
     result_batch = []
-    cpu_result_batch = []
-    io_result_batch = []
-    bandwidth_result_batch = []
-    memory_result_batch = []
+    time_result_batch = []
     task_priority_result_batch = []
     ns_result_batch = []
 
     for tasks in input_batch:
         time_start = time.time()
-        result, cpu_result, io_result, bandwidth_result, memory_result, task_priority_result, ns_result = get_rand_result(
-            tasks)
+        result, time_result, task_priority_result, ns_result = get_rand_result(tasks)
         time_end = time.time()
         print("rand: ", time_end - time_start)
         result_batch.append(result)
-        cpu_result_batch.append(cpu_result)
-        io_result_batch.append(io_result)
-        bandwidth_result_batch.append(bandwidth_result)
-        memory_result_batch.append(memory_result)
+        time_result_batch.append(time_result)
         task_priority_result_batch.append(task_priority_result)
         ns_result_batch.append(ns_result)
 
     result_array = np.array(result_batch)
-    cpu_result_array = np.array(cpu_result_batch)
-    io_result_array = np.array(io_result_batch)
-    bandwidth_result_array = np.array(bandwidth_result_batch)
-    memory_result_array = np.array(memory_result_batch)
+    time_result_array = np.array(time_result_batch)
     task_priority_result_array = np.array(task_priority_result_batch)
     ns_result_array = np.array(ns_result_batch)
 
     result = np.mean(result_array)
-    cpu_result = np.mean(cpu_result_array)
-    io_result = np.mean(io_result_array)
-    bandwidth_result = np.mean(bandwidth_result_array)
-    memory_result = np.mean(memory_result_array)
+    time_result = np.mean(time_result_array, axis=0)
     task_priority_result = np.mean(task_priority_result_array)
     ns_result = np.mean(ns_result_array)
 
     result = [result] * gen_num
-    cpu_result = [cpu_result] * gen_num
-    io_result = [io_result] * gen_num
-    bandwidth_result = [bandwidth_result] * gen_num
-    memory_result = [memory_result] * gen_num
+    time_result = [time_result] * gen_num
     task_priority_result = [task_priority_result] * gen_num
     ns_result = [ns_result] * gen_num
 
-    return result, cpu_result, io_result, bandwidth_result, memory_result, task_priority_result, ns_result
+    return result, time_result, task_priority_result, ns_result

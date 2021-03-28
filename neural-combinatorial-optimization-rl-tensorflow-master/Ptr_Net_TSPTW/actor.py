@@ -135,46 +135,70 @@ class Actor(object):
             # 得出self.critic.predictions
             variable_summaries('predictions_time', self.critic_time_.predictions, with_max_min=True)
 
-    def cond(self, server_remain, need):
+    def cond_2(self, min_task_idx, server_run_map, server_remain):
+        min_time = tf.cond(tf.equal(min_task_idx, tf.constant(-1)),
+                           lambda: tf.constant(10, dtype=tf.float32), lambda: server_run_map[min_task_idx][-1])
+        return tf.less_equal(min_time, tf.constant(0, dtype=tf.float32))
+
+    def body_2(self, min_task_idx, server_run_map, server_remain):
+        min_task = server_run_map[min_task_idx]
+        min_need = min_task[:4]
+        server_remain += min_need  # 更新剩余容量
+
+        part1 = server_run_map[:min_task_idx]
+        part2 = server_run_map[min_task_idx + 1:]
+        server_run_map = tf.concat([part1, part2], axis=0)  # 删除任务
+
+        min_task_idx = tf.cond(tf.equal(tf.shape(server_run_map)[0], tf.constant(0)),
+                               lambda: tf.constant(-1, dtype=tf.int64), lambda: tf.argmin(server_run_map, axis=0)[-1])
+        min_task_idx = tf.cast(min_task_idx, dtype=tf.int32)  # 找最近完成的任务
+
+        return min_task_idx, server_run_map, server_remain
+
+    def cond(self, server_remain, need, time_used, server_run_map):
         c_ = tf.less(server_remain, need)
         c_ = tf.logical_or(tf.logical_or(c_[0], c_[1]), tf.logical_or(c_[2], c_[3]))
         return c_
 
-    def body(self, server_remain, need):
-        self.server_run = self.server_run_map
-        self.min_task_idx = tf.argmin(self.server_run, axis=0)[-1]
-        self.min_task_idx = tf.cast(self.min_task_idx, dtype=tf.int32)  # 找最近完成的任务
-        self.min_task = self.server_run[self.min_task_idx]
-        self.min_need = self.min_task[:4]
-        self.min_time = self.min_task[-1]
+    def body(self, server_remain, need, time_used, server_run_map):
+        time_used += 1  # 更新时间
 
-        self.time_used[self.batch_idx] += 1  # 更新时间
+        server_run_map = tf.transpose(server_run_map, [1, 0])
+        server_run_map = tf.unstack(server_run_map)
+        server_run_map[-1] -= 1
+        server_run_map = tf.stack(server_run_map)
+        server_run_map = tf.transpose(server_run_map, [1, 0])
 
-        self.server_run = tf.transpose(self.server_run, [1, 0])
-        self.server_run = tf.unstack(self.server_run)
-        self.server_run[-1] -= self.min_time
-        self.server_run = tf.stack(self.server_run)
-        self.server_run = tf.transpose(self.server_run, [1, 0])
+        min_task_idx = tf.argmin(server_run_map, axis=0)[-1]
+        min_task_idx = tf.cast(min_task_idx, dtype=tf.int32)  # 找最近完成的任务
 
-        part1 = self.server_run[:self.min_task_idx]
-        part2 = self.server_run[self.min_task_idx + 1:]
-        #self.server_run_map = tf.concat([part1, part2], axis=0) # 删除任务
-        self.task_num -= 1
+        min_task_idx, \
+        server_run_map, \
+        server_remain = tf.while_loop(self.cond_2, self.body_2,
+                                      [min_task_idx, server_run_map, server_remain],
+                                      shape_invariants=[min_task_idx.get_shape(),
+                                                        tf.TensorShape([None, self.input_dimension]),
+                                                        server_remain.get_shape()])
 
-        server_remain += self.min_need
-        return server_remain, need
+        return server_remain, need, time_used, server_run_map
 
-    def f1(self):
-        self.timeout_count[self.batch_idx] += 1
-        return self.timeout_count
+    def f1(self, timeout_count, time_used, server_remain, need, server_run_map, task):
+        timeout_count += 1
+        return timeout_count, time_used, server_remain, need, server_run_map, task
 
-    def f2(self):
-        self.server_remain, self.need = tf.while_loop(self.cond, self.body,
-                                                      [self.server_remain, self.need])
-        self.server_run_map = tf.concat([self.server_run_map, self.task], axis=0)
-        self.server_remain -= self.need  # 更新服务器剩余容量
-        self.task_num += 1  # 更新服务器正在运行的任务数
-        return self.timeout_count
+    def f2(self, timeout_count, time_used, server_remain, need, server_run_map, task):
+        server_remain, \
+        need, \
+        time_used, \
+        server_run_map = tf.while_loop(self.cond, self.body,
+                                       [server_remain, need, time_used, server_run_map],
+                                       shape_invariants=[server_remain.get_shape(),
+                                                         need.get_shape(),
+                                                         time_used.get_shape(),
+                                                         tf.TensorShape([None, self.input_dimension])])
+        server_run_map = tf.concat([server_run_map, task], axis=0)
+        server_remain -= need  # 更新服务器剩余容量
+        return timeout_count, time_used, server_remain, need, server_run_map, task
 
     def build_reward(self):
         with tf.name_scope('permutations'):
@@ -251,12 +275,11 @@ class Actor(object):
         with tf.name_scope('environment'):
             self.time_used = [tf.constant(0, dtype=tf.float32)] * self.batch_size  # [batch_size]  # 已用时间
             self.timeout_count = [tf.constant(0, dtype=tf.float32)] * self.batch_size  # [batch_size]  # 超时数
-           
+
             for self.batch_idx, instance in enumerate(tf.unstack(self.ordered_input_)):
                 self.instance = instance  # self.batch_idx:[max_length, input_dimension]
-                self.task_num = tf.constant(0, dtype=tf.int32)  # 已有任务数
-                self.server_run_map = None # 服务器正在运行的任务列表
-                self.server_remain = tf.constant([1, 1, 1, 1], dtype=tf.float32) # 服务器剩余容量
+                self.server_run_map = None  # 服务器正在运行的任务列表
+                self.server_remain = tf.constant([1, 1, 1, 1], dtype=tf.float32)  # 服务器剩余容量
                 # 将任务依次载入服务器
                 for task_idx, task in enumerate(tf.unstack(self.instance)):
                     self.task = task  # [input_dimension]
@@ -268,32 +291,28 @@ class Actor(object):
                     if task_idx == 0:
                         self.server_run_map = self.task
                         self.server_remain -= self.need
-                        self.task_num += 1
                         continue
 
-                    self.f1()
-                    self.f2()
-                    # self.timeout_count = tf.cond(tf.less(time_out, self.time_used[self.batch_idx] + time_need),
-                    #                             lambda: self.f1(), lambda: self.f2(task))
+                    self.timeout_count[self.batch_idx], self.time_used[
+                        self.batch_idx], self.server_remain, self.need, self.server_run_map, self.task = tf.cond(
+                        tf.less(time_out, self.time_used[self.batch_idx] + time_need),
+                        lambda: self.f1(self.timeout_count[self.batch_idx], self.time_used[self.batch_idx],
+                                        self.server_remain, self.need, self.server_run_map, self.task),
+                        lambda: self.f2(self.timeout_count[self.batch_idx], self.time_used[self.batch_idx],
+                                        self.server_remain, self.need, self.server_run_map, self.task))
 
                 # 所有任务载入完成
                 self.max_time = tf.reduce_max(self.server_run_map, axis=0)[-1]
-                self.time_used[self.batch_idx] += 1  # 更新当前时间
-                print(self.time_used[self.batch_idx])
+                self.time_used[self.batch_idx] += self.max_time  # 更新当前时间
 
-            self.time_used = self.time_used
-            self.time_use = tf.stack(self.time_used)  # 时间
-            self.ns_prob = tf.stack(self.timeout_count) / self.max_length  # 超时率
+            self.time_use = tf.stack(self.time_used) / self.max_length  # 时间
+            self.ns_prob = tf.stack(self.timeout_count) / (self.max_length // 2)  # 超时率
 
             priority_max = tf.reduce_max(task_priority, axis=0)  # 求每组样本的λ最大值
             task_priority = tf.divide(task_priority, priority_max)  # 归一化
             task_priority_weight = tf.multiply(task_priority, self.weight_list)  # 带权
             self.task_priority_sum = tf.reduce_sum(task_priority_weight, axis=0)  # [batch_size]# 求和
-            self.task_priority_sum = self.task_priority_sum / (self.max_length / 4)  # 0.25n
-
-            print(self.time_use)
-            print(self.task_priority_sum)
-            print(self.ns_prob)
+            self.task_priority_sum = self.task_priority_sum / (self.max_length // 2)
 
             self.reward = tf.cast(self.time_use, tf.float32)  # 运行时间
             self.reward_2 = tf.cast(self.task_priority_sum, tf.float32)  # 任务优先级

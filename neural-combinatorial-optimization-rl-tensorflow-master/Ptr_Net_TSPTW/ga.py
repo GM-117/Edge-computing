@@ -16,11 +16,6 @@ alpha = config.alpha
 beta = config.beta
 gama = config.gama
 
-alpha_c = config.alpha_c
-alpha_o = config.alpha_o
-alpha_b = config.alpha_b
-alpha_m = config.alpha_m
-
 
 def copy_int(old_arr: [int]):
     new_arr = []
@@ -40,10 +35,7 @@ class Chromosome:
             random.shuffle(genes)
         self.genes = genes
         self.fitness = 0.0
-        self.cpu_sum = 0.0
-        self.io_sum = 0.0
-        self.bandwidth_sum = 0.0
-        self.memory_sum = 0.0
+        self.time_use = 0.0
         self.task_priority = 0.0
         self.ns = 0.0
         self.evaluate_fitness()
@@ -52,51 +44,57 @@ class Chromosome:
         task_priority_max = 0
         for i in range(tasks_num):
             task_priority_max = max(task_priority_max, tasks[i][4])
-        time_used = 0
-        ns_ = 0
-        cpu_sum = 0
-        io_sum = 0
-        bandwidth_sum = 0
-        memory_sum = 0
+
         task_priority_sum = 0
         for idx in range(tasks_num):
             i = self.genes[idx]
-            cpu = tasks[i][0] * 4
-            io = tasks[i][1] * 4
-            bandwidth = tasks[i][2] * 4
-            memory = tasks[i][3] * 4
             task_priority = tasks[i][4]
-            timeout = tasks[i][5]
-            time_use = tasks[i][6]
-            cpu = cpu * (1 - idx / tasks_num)
-            io = io * (1 - idx / tasks_num)
-            bandwidth = bandwidth * (1 - idx / tasks_num)
-            memory = memory * (1 - idx / tasks_num)
             task_priority = (task_priority / task_priority_max) * (1 - idx / tasks_num)
-            cpu_sum += cpu
-            io_sum += io
-            bandwidth_sum += bandwidth
-            memory_sum += memory
             task_priority_sum += task_priority
-            time_used += time_use
-            if timeout < time_used:
+
+        ns_ = 0
+        time_use = 0
+        server_run_map = []
+        server_remain = [1, 1, 1, 1]
+        for idx in self.genes:
+            task = tasks[idx]
+            need = task[:4]
+            time_out = task[5]
+            time_need = task[6]
+
+            if time_use + time_need > time_out:  # 超时
                 ns_ += 1
+                continue
 
-        cpu_sum = cpu_sum / (tasks_num / 4)
-        io_sum = io_sum / (tasks_num / 4)
-        bandwidth_sum = bandwidth_sum / (tasks_num / 4)
-        memory_sum = memory_sum / (tasks_num / 4)
-        task_priority_sum = task_priority_sum / (tasks_num / 4)
-        ns_prob = ns_ / tasks_num
+            while server_remain[0] < need[0] or server_remain[1] < need[1] or \
+                    server_remain[2] < need[2] or server_remain[3] < need[3]:
+                server_run_map = np.array(server_run_map)
+                time_use += 1  # 更新时间
+                server_run_map[:, -1] -= 1
+                server_run_map = server_run_map.tolist()
 
-        reward_1 = 0.25 * (cpu_sum + io_sum + bandwidth_sum + memory_sum)
-        reward_2 = task_priority_sum
-        reward_3 = ns_prob
-        self.fitness = reward_2 + reward_3
-        self.cpu_sum = cpu_sum
-        self.io_sum = io_sum
-        self.bandwidth_sum = bandwidth_sum
-        self.memory_sum = memory_sum
+                while len(server_run_map) > 0:  # 移除已完成的任务
+                    min_task_idx = np.argmin(server_run_map, axis=0)[-1]
+                    min_task = server_run_map[min_task_idx]
+                    min_need = min_task[:4]
+                    min_time = min_task[-1]
+                    if min_time > 0:
+                        break
+                    server_remain = np.add(server_remain, min_need)  # 更新剩余容量
+                    del server_run_map[min_task_idx]  # 移除任务
+
+            server_run_map.append(task)  # 将新任务加入服务器
+            server_remain = np.subtract(server_remain, need)  # 更新服务器剩余容量
+
+        max_time_idx = np.argmax(server_run_map, axis=0)[-1]
+        max_time = server_run_map[max_time_idx][-1]
+        time_use += max_time
+        time_use = time_use / tasks_num
+        task_priority_sum = task_priority_sum / (tasks_num // 2)
+
+        ns_prob = ns_/ (tasks_num // 2)
+        self.fitness = time_use + task_priority_sum + ns_prob
+        self.time_use = time_use
         self.task_priority = task_priority_sum
         self.ns = ns_prob
 
@@ -112,10 +110,7 @@ class GaAllocate:
         self.chromosome_list = []
         # 迭代次数对应的解
         self.result = []
-        self.cpu_result = []
-        self.io_result = []
-        self.bandwidth_result = []
-        self.memory_result = []
+        self.time_result = []
         self.task_priority_result = []
         self.ns_result = []
 
@@ -208,54 +203,39 @@ class GaAllocate:
         self.generation_count = 0
         while self.generation_count < gen_num:
             self.result.append(self.best.fitness)
-            self.cpu_result.append(self.best.cpu_sum)
-            self.io_result.append(self.best.io_sum)
-            self.bandwidth_result.append(self.best.bandwidth_sum)
-            self.memory_result.append(self.best.memory_sum)
+            self.time_result.append(self.best.time_use)
             self.task_priority_result.append(self.best.task_priority)
             self.ns_result.append(self.best.ns)
             self.generate_next_generation()
             self.generation_count += 1
 
-        return self.result, self.cpu_result, self.io_result, self.bandwidth_result, self.memory_result, self.task_priority_result, self.ns_result
+        return self.result, self.time_result, self.task_priority_result, self.ns_result
 
 
 def do_ga(input_batch):
     result_batch = []
-    cpu_result_batch = []
-    io_result_batch = []
-    bandwidth_result_batch = []
-    memory_result_batch = []
+    time_result_batch = []
     task_priority_result_batch = []
     ns_result_batch = []
 
     for task in tqdm(input_batch):
         time_start = time.time()
         ga = GaAllocate(task)
-        result, cpu_result, io_result, bandwidth_result, memory_result, task_priority_result, ns_result = ga.train()
+        result, time_result, task_priority_result, ns_result = ga.train()
         time_end = time.time()
         print("ga: ", time_end - time_start)
         result_batch.append(result)
-        cpu_result_batch.append(cpu_result)
-        io_result_batch.append(io_result)
-        bandwidth_result_batch.append(bandwidth_result)
-        memory_result_batch.append(memory_result)
+        time_result_batch.append(time_result)
         task_priority_result_batch.append(task_priority_result)
         ns_result_batch.append(ns_result)
 
     result_array = np.array(result_batch)
-    cpu_result_array = np.array(cpu_result_batch)
-    io_result_array = np.array(io_result_batch)
-    bandwidth_result_array = np.array(bandwidth_result_batch)
-    memory_result_array = np.array(memory_result_batch)
+    time_result_array = np.array(time_result_batch)
     task_priority_result_array = np.array(task_priority_result_batch)
     ns_result_array = np.array(ns_result_batch)
 
     result = np.mean(result_array, axis=0)
-    cpu_result = np.mean(cpu_result_array, axis=0)
-    io_result = np.mean(io_result_array, axis=0)
-    bandwidth_result = np.mean(bandwidth_result_array, axis=0)
-    memory_result = np.mean(memory_result_array, axis=0)
+    time_result = np.mean(time_result_array, axis=0)
     task_priority_result = np.mean(task_priority_result_array, axis=0)
     ns_result = np.mean(ns_result_array, axis=0)
-    return result, cpu_result, io_result, bandwidth_result, memory_result, task_priority_result, ns_result
+    return result, time_result, task_priority_result, ns_result
