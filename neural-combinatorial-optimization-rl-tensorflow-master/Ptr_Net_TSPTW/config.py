@@ -22,18 +22,18 @@ net_arg.add_argument('--hidden_dim', type=int, default=128, help='actor LSTM num
 
 # Data
 data_arg = add_argument_group('Data')
-data_arg.add_argument('--batch_size', type=int, default=32
+data_arg.add_argument('--batch_size', type=int, default=16
                       , help='batch size')
 data_arg.add_argument('--input_dimension', type=int, default=7, help='data dimension')
-data_arg.add_argument('--max_length', type=int, default=20, help='number of task')  # this excludes depot
+data_arg.add_argument('--max_length', type=int, default=80, help='number of task')  # this excludes depot
 data_arg.add_argument('--dir_', type=str, default='n20w100', help='Dumas benchmarch instances')
 
 # Training / test parameters
 train_arg = add_argument_group('Training')
 train_arg.add_argument('--gen_num', type=int, default=300, help='ga gen num')
-train_arg.add_argument('--nb_epoch', type=int, default=2000, help='nb epoch')
+train_arg.add_argument('--nb_epoch', type=int, default=5000, help='nb epoch')
 train_arg.add_argument('--lr1_start', type=float, default=0.0001, help='actor learning rate')
-train_arg.add_argument('--lr1_decay_step', type=int, default=100, help='lr1 decay step')
+train_arg.add_argument('--lr1_decay_step', type=int, default=500, help='lr1 decay step')
 train_arg.add_argument('--lr1_decay_rate', type=float, default=0.96, help='lr1 decay rate')
 
 train_arg.add_argument('--alpha', type=float, default=0.3, help='weight for load impact')

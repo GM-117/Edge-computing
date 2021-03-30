@@ -67,13 +67,11 @@ def main():
             for i in tqdm(range(config.nb_epoch)):
                 # Get feed dict
                 feed = {actor.input_: input_batch}
-                input_batch = training_set.train_batch()
                 # Forward pass & train step
 
-                result, time_use, task_priority_sum, ns_prob, summary, train_step1, train_step2, train_step1_task, train_step2_task, train_step1_time, train_step2_time = sess.run(
-                    [actor.result, actor.time_use, actor.task_priority_sum, actor.ns_prob, actor.merged,
-                     actor.train_step1, actor.train_step2,
-                     actor.train_step1_task, actor.train_step2_task, actor.train_step1_time, actor.train_step2_time],
+                result, time_use, task_priority_sum, ns_prob, summary, train_step1, train_step2 = sess.run(
+                    [actor.reward, actor.time_use, actor.task_priority_sum, actor.ns_prob, actor.merged,
+                     actor.train_step1, actor.train_step2],
                     feed_dict=feed)
 
                 reward_mean = np.mean(result)
@@ -106,10 +104,9 @@ def main():
             time_start = time.time()
             # Sample solutions
 
-            result, time_used, task_priority_sum, ns_prob, summary, train_step1, train_step2, train_step1_task, train_step2_task, train_step1_time, train_step2_time = sess.run(
-                [actor.result, actor.time_used, actor.task_priority_sum, actor.ns_prob, actor.merged,
-                 actor.train_step1, actor.train_step2,
-                 actor.train_step1_task, actor.train_step2_task, actor.train_step1_time, actor.train_step2_time],
+            result, time_used, task_priority_sum, ns_prob, summary, train_step1, train_step2 = sess.run(
+                [actor.reward, actor.time_used, actor.task_priority_sum, actor.ns_prob, actor.merged,
+                 actor.train_step1, actor.train_step2],
                 feed_dict=feed)
 
             time_end = time.time()
@@ -125,13 +122,18 @@ def main():
             task_priority.append(task_priority_mean)
             ns_.append(ns_mean)
 
-    ga_result, ga_time_result, ga_task_priority_result, ga_ns_result = do_ga(input_batch)
+    # ga_result, ga_time_result, ga_task_priority_result, ga_ns_result = do_ga(input_batch)
 
-    # ga_result = ga_cpu_result = ga_io_result = ga_bandwidth_result = ga_memory_result = ga_task_priority_result = ga_ns_result = []
+    ga_result = ga_time_result = ga_task_priority_result = ga_ns_result = []
 
-    rand_result, rand_time_result, rand_task_priority_result, rand_ns_result = do_rand(input_batch)
+    # rand_result, rand_time_result, rand_task_priority_result, rand_ns_result = do_rand(input_batch, 0)
+    # greed_result, _, _, _ = do_rand(input_batch, 1)
+    # _, greed_1_result, _, _ = do_rand(input_batch, 2)
+    # _, _, greed_2_result, _ = do_rand(input_batch, 3)
+    # _, _, _, greed_3_result = do_rand(input_batch, 4)
 
-    # rand_result = rand_cpu_result = rand_io_result = rand_bandwidth_result = rand_memory_result = rand_task_priority_result = rand_ns_result = []
+    rand_result = rand_time_result = rand_task_priority_result = rand_ns_result = []
+    greed_result = greed_1_result = greed_2_result = greed_3_result = []
 
     # 解决中文显示问题
     plt.rcParams['font.sans-serif'] = ['KaiTi']  # 指定默认字体
@@ -173,14 +175,22 @@ def main():
     print('gen_num:', config.gen_num)
     print('nb_epoch:', config.nb_epoch)
     print('ptr')
+    print('综合效果', mean(predictions[-10:]))
     print('目标1：运行时间', mean(time_used[-10:]))
     print('目标2：任务优先级', mean(task_priority[-10:]))
     print('目标3：超时率', mean(ns_[-10:]))
     print('ga')
+    print('综合效果', mean(ga_result[-10:]))
     print('目标1：运行时间', mean(ga_time_result[-10:]))
     print('目标2：任务优先级', mean(ga_task_priority_result[-10:]))
     print('目标3：超时率', mean(ga_ns_result[-10:]))
+    print('greed')
+    print('综合效果', mean(greed_result[-10:]))
+    print('目标1：运行时间', mean(greed_1_result[-10:]))
+    print('目标2：任务优先级', mean(greed_2_result[-10:]))
+    print('目标3：超时率', mean(greed_3_result[-10:]))
     print('rand')
+    print('综合效果', mean(rand_result[-10:]))
     print('目标1：运行时间', mean(rand_time_result[-10:]))
     print('目标2：任务优先级', mean(rand_task_priority_result[-10:]))
     print('目标3：超时率', mean(rand_ns_result[-10:]))

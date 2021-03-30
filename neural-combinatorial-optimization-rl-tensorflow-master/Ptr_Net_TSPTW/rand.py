@@ -4,6 +4,7 @@ import random
 from Ptr_Net_TSPTW.config import get_config
 
 tasks = []
+type = -1
 
 config, _ = get_config()
 tasks_num = config.max_length
@@ -15,66 +16,97 @@ gama = config.gama
 gen_num = config.nb_epoch
 
 
+# type 0:随机 1:带权贪心 2:资源贪心 3:优先级贪心 4:超时率贪心
 def get_rand_result(tasks_):
     global tasks
     tasks = tasks_
+    idx_list = get_idx_list()
+    return get_result(idx_list)
+
+
+def get_idx_list():
+    if type == -1:
+        return []
+    if type == 0:
+        return rand_idx_list()
+    if type == 1:
+        return greed_idx_list()
+    if type == 2:
+        return greed_1_idx_list()
+    if type == 3:
+        return greed_2_idx_list()
+    if type == 4:
+        return greed_3_idx_list()
+
+
+def rand_idx_list():
+    result_idx_list = list(range(len(tasks)))
+    random.shuffle(result_idx_list)
+    return result_idx_list
+
+
+def greed_idx_list():
     result_idx_list = []
+    task = []
+    for task_ in tasks:
+        task.append([task_[0] + task_[1] + task_[2] + task_[3], task_[4], task_[5]])
+    task = np.array(tasks)
 
-    cpu = []
-    io = []
-    bandwidth = []
-    memory = []
-    task_priority = []
-    timeout = []
-    time_use = []
-    for task in tasks:
-        cpu.append(task[0])
-        io.append(task[1])
-        bandwidth.append(task[2])
-        memory.append(task[3])
-        task_priority.append(task[4])
-        timeout.append(task[5])
-        time_use.append(task[6])
-
-    cpu = np.array(cpu)
-    io = np.array(io)
-    bandwidth = np.array(bandwidth)
-    memory = np.array(memory)
-    task_priority = np.array(task_priority)
-    timeout = np.array(timeout)
-    time_use = np.array(time_use)
     for i in range(tasks_num):
-        rand_idx = random.randint(0, 6)
+        rand_idx = random.randint(0, 2)
         min_idx = -1
         if rand_idx == 0:
-            rand_idx = random.randint(0, 3)
-            if rand_idx == 0:
-                min_idx = np.argmin(cpu)
-            if rand_idx == 1:
-                min_idx = np.argmin(io)
-            if rand_idx == 2:
-                min_idx = np.argmin(bandwidth)
-            if rand_idx == 3:
-                min_idx = np.argmin(memory)
-        if rand_idx == 1 or 3 or 4 or 5 or 6:
-            min_idx = np.argmin(task_priority)
+            min_idx = np.argmin(task[:, 0])
+        if rand_idx == 1:
+            min_idx = np.argmin(task[:, 1])
         if rand_idx == 2:
-            rand_idx = random.randint(0, 2)
-            if rand_idx == 0:
-                min_idx = np.argmin(timeout)
-            if rand_idx == 1:
-                min_idx = np.argmin(time_use)
-            if rand_idx == 2:
-                min_idx = np.argmax(time_use)
-        cpu[min_idx] = 10000
-        io[min_idx] = 10000
-        bandwidth[min_idx] = 10000
-        memory[min_idx] = 10000
-        task_priority[min_idx] = 10000
-        timeout[min_idx] = 10000
+            min_idx = np.argmin(task[:, 2])
+        task[min_idx, :] = 10000
         result_idx_list.append(min_idx)
 
-    return get_result(result_idx_list)
+    return result_idx_list
+
+
+def greed_1_idx_list():
+    result_idx_list = []
+    resource = []
+    for task in tasks:
+        resource.append(task[0] + task[1] + task[2] + task[3])
+
+    for i in range(tasks_num):
+        min_idx = np.argmin(resource)
+        resource[int(min_idx)] = 10000
+        result_idx_list.append(min_idx)
+
+    return result_idx_list
+
+
+def greed_2_idx_list():
+    result_idx_list = []
+    priority = []
+    for task in tasks:
+        priority.append(task[4])
+
+    for i in range(tasks_num):
+        min_idx = np.argmin(priority)
+        priority[int(min_idx)] = 10000
+        result_idx_list.append(min_idx)
+
+    return result_idx_list
+
+
+def greed_3_idx_list():
+    result_idx_list = []
+    timeout = []
+    for task in tasks:
+        timeout.append(task[5])
+
+    for i in range(tasks_num):
+        min_idx = np.argmin(timeout)
+        timeout[int(min_idx)] = 10000
+        result_idx_list.append(min_idx)
+
+    return result_idx_list
 
 
 def get_result(result_idx_list):
@@ -136,7 +168,9 @@ def get_result(result_idx_list):
     return 0, time_use, task_priority_sum, ns_prob
 
 
-def do_rand(input_batch):
+def do_rand(input_batch, type_):
+    global type
+    type = type_
     result_batch = []
     time_result_batch = []
     task_priority_result_batch = []
