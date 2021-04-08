@@ -6,7 +6,7 @@ from Ptr_Net_TSPTW.config import get_config
 
 config, _ = get_config()
 
-chromosome_num = 100
+chromosome_num = 50
 tasks = []
 tasks_num = config.max_length
 # 迭代轮数
@@ -90,9 +90,8 @@ class Chromosome:
         max_time = server_run_map[max_time_idx][-1]
         time_use += max_time
         time_use = time_use / tasks_num
-        task_priority_sum = task_priority_sum / (tasks_num // 2)
-
-        ns_prob = ns_/ (tasks_num // 2)
+        task_priority_sum = 2 * task_priority_sum / tasks_num
+        ns_prob = 2 * ns_ / tasks_num
         self.fitness = time_use + task_priority_sum + ns_prob
         self.time_use = time_use
         self.task_priority = task_priority_sum

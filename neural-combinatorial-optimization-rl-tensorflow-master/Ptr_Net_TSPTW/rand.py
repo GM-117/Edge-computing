@@ -161,11 +161,11 @@ def get_result(result_idx_list):
     max_time = server_run_map[max_time_idx][-1]
     time_use += max_time
     time_use = time_use / tasks_num
-    task_priority_sum = task_priority_sum / (tasks_num // 2)
+    task_priority_sum = 2 * task_priority_sum / tasks_num
+    ns_prob = 2 * ns_ / tasks_num
 
-    ns_prob = ns_ / (tasks_num // 2)
-
-    return 0, time_use, task_priority_sum, ns_prob
+    result = time_use + task_priority_sum + ns_prob
+    return result, time_use, task_priority_sum, ns_prob
 
 
 def do_rand(input_batch, type_):

@@ -74,6 +74,8 @@ def main():
                      actor.train_step1, actor.train_step2],
                     feed_dict=feed)
 
+                task_priority_sum = task_priority_sum * 2
+                result = time_use + task_priority_sum + ns_prob
                 reward_mean = np.mean(result)
                 time_mean = np.mean(time_use)
                 task_priority_mean = np.mean(task_priority_sum)
@@ -122,18 +124,9 @@ def main():
             task_priority.append(task_priority_mean)
             ns_.append(ns_mean)
 
-    # ga_result, ga_time_result, ga_task_priority_result, ga_ns_result = do_ga(input_batch)
+    ga_result, ga_time_result, ga_task_priority_result, ga_ns_result = do_ga(input_batch)
 
-    ga_result = ga_time_result = ga_task_priority_result = ga_ns_result = []
-
-    # rand_result, rand_time_result, rand_task_priority_result, rand_ns_result = do_rand(input_batch, 0)
-    # greed_result, _, _, _ = do_rand(input_batch, 1)
-    # _, greed_1_result, _, _ = do_rand(input_batch, 2)
-    # _, _, greed_2_result, _ = do_rand(input_batch, 3)
-    # _, _, _, greed_3_result = do_rand(input_batch, 4)
-
-    rand_result = rand_time_result = rand_task_priority_result = rand_ns_result = []
-    greed_result = greed_1_result = greed_2_result = greed_3_result = []
+    # ga_result = ga_time_result = ga_task_priority_result = ga_ns_result = []
 
     # 解决中文显示问题
     plt.rcParams['font.sans-serif'] = ['KaiTi']  # 指定默认字体
@@ -170,6 +163,15 @@ def main():
     plt.xlabel('轮数')
     plt.legend()
     fig.show()
+
+    rand_result, rand_time_result, rand_task_priority_result, rand_ns_result = do_rand(input_batch, 0)
+    greed_result, greed_1_result, greed_2_result, greed_3_result = do_rand(input_batch, 1)
+    # _, greed_1_result, _, _ = do_rand(input_batch, 2)
+    # _, _, greed_2_result, _ = do_rand(input_batch, 3)
+    # _, _, _, greed_3_result = do_rand(input_batch, 4)
+
+    # rand_result = rand_time_result = rand_task_priority_result = rand_ns_result = []
+    # greed_result = greed_1_result = greed_2_result = greed_3_result = []
 
     print('task:', config.max_length)
     print('gen_num:', config.gen_num)

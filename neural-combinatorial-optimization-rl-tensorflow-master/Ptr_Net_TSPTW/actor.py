@@ -252,19 +252,19 @@ class Actor(object):
                 self.time_used[self.batch_idx] += self.max_time  # 更新当前时间
 
             self.time_use = tf.stack(self.time_used) / self.max_length  # 时间
-            self.ns_prob = tf.stack(self.timeout_count) / (self.max_length // 2)  # 超时率
+            self.ns_prob = 2 * tf.stack(self.timeout_count) / self.max_length  # 超时率
 
             priority_max = tf.reduce_max(task_priority, axis=0)  # 求每组样本的λ最大值
             task_priority = tf.divide(task_priority, priority_max)  # 归一化
             task_priority_weight = tf.multiply(task_priority, self.weight_list)  # 带权
             self.task_priority_sum = tf.reduce_sum(task_priority_weight, axis=0)  # [batch_size]# 求和
-            self.task_priority_sum = self.task_priority_sum / (self.max_length // 2)
+            self.task_priority_sum = self.task_priority_sum / self.max_length
 
-            self.reward = tf.cast(self.time_use, tf.float32)  # 运行时间
+            self.reward_1 = tf.cast(self.time_use, tf.float32)  # 运行时间
             self.reward_2 = tf.cast(self.task_priority_sum, tf.float32)  # 任务优先级
             self.reward_3 = tf.cast(self.ns_prob, tf.float32)  # 超时率
-            # self.result = self.reward + self.reward_2 + self.reward_3
-            self.reward = self.reward + self.reward_2 + self.reward_3
+            self.reward = self.reward_1 + self.reward_2 + self.reward_3
+            # self.reward = self.reward + self.reward_2 + self.reward_3
             variable_summaries('reward', self.reward, with_max_min=True)
             # variable_summaries('reward_2', self.reward_2, with_max_min=True)
             # variable_summaries('reward_3', self.reward_3, with_max_min=True)
