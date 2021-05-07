@@ -1,9 +1,4 @@
-a = 4.5190625
-b = 0.4958616
-c = 0.86812496
+import numpy as np
 
-a = a / 5
-c = c / 5
-res = a + b + c
-
-print(res, a, c)
+t = np.random.random_sample() * (1.2 - 0.8) + 0.8
+print(t)

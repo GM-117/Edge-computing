@@ -8,7 +8,7 @@ class Critic(object):
 
         # Data config
         self.batch_size = config.batch_size  # batch size
-        self.max_length = config.max_length  # input sequence length (number of cities)
+        self.max_length = config.task_num  # input sequence length (number of cities)
         self.input_dimension = config.input_dimension  # dimension of a city (coordinates)
 
         # Network config

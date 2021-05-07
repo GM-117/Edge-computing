@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
+import numpy as np
 
 parser = argparse.ArgumentParser(description='Configuration file')
 arg_lists = []
@@ -25,13 +26,17 @@ data_arg = add_argument_group('Data')
 data_arg.add_argument('--batch_size', type=int, default=16
                       , help='batch size')
 data_arg.add_argument('--input_dimension', type=int, default=7, help='data dimension')
-data_arg.add_argument('--max_length', type=int, default=50, help='number of task')  # this excludes depot
+data_arg.add_argument('--task_num', type=int, default=60, help='number of user')  # 300,400,500
+data_arg.add_argument('--server_num', type=int, default=1, help='number of server')  # 5,10,15
+data_arg.add_argument('--server_capacity', type=int, default=5, help='server capacity')  # 5,6,7,8,9,10
+data_arg.add_argument('--server_allocate', type=list, default=list(np.random.randint(low=0, high=1, size=(100))),
+                      help='server allocate')
 data_arg.add_argument('--dir_', type=str, default='n20w100', help='Dumas benchmarch instances')
 
 # Training / test parameters
 train_arg = add_argument_group('Training')
 train_arg.add_argument('--gen_num', type=int, default=300, help='ga gen num')
-train_arg.add_argument('--nb_epoch', type=int, default=1000, help='nb epoch')
+train_arg.add_argument('--nb_epoch', type=int, default=2000, help='nb epoch')
 train_arg.add_argument('--lr1_start', type=float, default=0.0001, help='actor learning rate')
 train_arg.add_argument('--lr1_decay_step', type=int, default=500, help='lr1 decay step')
 train_arg.add_argument('--lr1_decay_rate', type=float, default=0.96, help='lr1 decay rate')
@@ -73,7 +78,6 @@ def print_config():
     print('\n')
     print('Data Config:')
     print('* Batch size:', config.batch_size)
-    print('* Sequence length:', config.max_length)
     print('* Task coordinates:', config.input_dimension)
     print('\n')
     print('Network Config:')
