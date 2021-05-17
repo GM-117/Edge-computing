@@ -66,6 +66,7 @@ def main():
                     feed_dict=feed)
 
                 time_use = time_use
+                ns_prob = ns_prob
                 result = time_use + task_priority_sum + ns_prob
                 reward_mean = np.mean(result)
                 time_mean = np.mean(time_use)

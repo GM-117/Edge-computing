@@ -2,19 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d3fa43eb-70ce-44c0-95b3-0428eac7c674" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/multy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/actor.py" beforeDir="false" afterPath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/actor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/critic.py" beforeDir="false" afterPath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/critic.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/dataset.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/rand.py" beforeDir="false" afterPath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/rand.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/../neural-combinatorial-optimization-rl-tensorflow-master/Ptr_Net_TSPTW/test.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/main2.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../思路.docx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../数据格式.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/../数据格式.xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../副本/Ptr_Net_TSPTW/actor.py" beforeDir="false" afterPath="$PROJECT_DIR$/../副本/Ptr_Net_TSPTW/actor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../副本/Ptr_Net_TSPTW/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/../副本/Ptr_Net_TSPTW/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../副本/Ptr_Net_TSPTW/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/../副本/Ptr_Net_TSPTW/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../效果.docx" beforeDir="false" afterPath="$PROJECT_DIR$/../效果.docx" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -23,43 +17,26 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.8858237">
-      <split-first>
-        <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-          <file pinned="false" current-in-tab="true">
-            <entry file="file://$PROJECT_DIR$/main.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="375">
-                  <caret line="21" column="91" selection-start-line="21" selection-start-column="91" selection-end-line="21" selection-end-column="91" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-        </leaf>
-      </split-first>
-      <split-second>
-        <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/main.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="1800">
-                  <caret line="72" column="10" selection-start-line="72" selection-start-column="10" selection-end-line="72" selection-end-column="10" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="true">
-            <entry file="file://$PROJECT_DIR$/test.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state>
-                  <caret selection-end-line="18" selection-end-column="18" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-        </leaf>
-      </split-second>
-    </splitter>
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/main.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="149">
+              <caret line="30" column="18" lean-forward="true" selection-start-line="30" selection-start-column="18" selection-end-line="30" selection-end-column="18" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/main2.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="350">
+              <caret line="14" selection-start-line="14" selection-end-line="14" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -68,6 +45,14 @@
       </list>
     </option>
   </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>(m)</find>
+    </findStrings>
+    <replaceStrings>
+      <replace>m(个)</replace>
+    </replaceStrings>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
@@ -75,15 +60,16 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/test.py" />
+        <option value="$PROJECT_DIR$/main2.py" />
         <option value="$PROJECT_DIR$/main.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-2568" />
-    <option name="y" value="-368" />
-    <option name="width" value="2576" />
-    <option name="height" value="1416" />
+    <option name="x" value="2552" />
+    <option name="y" value="352" />
+    <option name="width" value="1936" />
+    <option name="height" value="1056" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -108,9 +94,15 @@
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\11863\Documents\GitHub\Edge-computing\pic_draw" />
+    </key>
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -147,6 +139,28 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="main2" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="pic_draw" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main2.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="test" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="pic_draw" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -172,6 +186,7 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.main" />
+        <item itemvalue="Python.main2" />
         <item itemvalue="Python.test" />
       </list>
     </recent_temporary>
@@ -194,21 +209,23 @@
       <workItem from="1619068328119" duration="2485000" />
       <workItem from="1619071028835" duration="2356000" />
       <workItem from="1619073408775" duration="4000" />
+      <workItem from="1620714529352" duration="1072000" />
+      <workItem from="1621173338107" duration="1523000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="11537000" />
+    <option name="totallyTimeSpent" value="14132000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-2568" y="-368" width="2576" height="1416" extended-state="6" />
+    <frame x="2552" y="352" width="1936" height="1056" extended-state="6" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.07670906" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.104477614" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.17940718" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.49566162" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -222,7 +239,7 @@
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info active="true" anchor="right" id="SciView" order="3" visible="true" weight="0.4554849" />
+      <window_info active="true" anchor="right" id="SciView" order="3" visible="true" weight="0.5682303" />
       <window_info anchor="right" id="Database" order="4" />
     </layout>
   </component>
@@ -231,20 +248,28 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/pic_draw$test.coverage" NAME="test Coverage Results" MODIFIED="1619071318106" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/pic_draw$main.coverage" NAME="main Coverage Results" MODIFIED="1619072879583" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/pic_draw$main2.coverage" NAME="main2 Coverage Results" MODIFIED="1620715802591" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/pic_draw$main.coverage" NAME="main Coverage Results" MODIFIED="1621174163791" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1800">
-          <caret line="72" column="10" selection-start-line="72" selection-start-column="10" selection-end-line="72" selection-end-column="10" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/test.py">
       <provider selected="true" editor-type-id="text-editor">
         <state>
           <caret selection-end-line="18" selection-end-column="18" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main2.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="350">
+          <caret line="14" selection-start-line="14" selection-end-line="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="149">
+          <caret line="30" column="18" lean-forward="true" selection-start-line="30" selection-start-column="18" selection-end-line="30" selection-end-column="18" />
         </state>
       </provider>
     </entry>

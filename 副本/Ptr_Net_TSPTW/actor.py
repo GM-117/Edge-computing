@@ -228,7 +228,7 @@ class Actor(object):
                 self.max_time = tf.reduce_max(self.server_run_map, axis=0)[-1]
                 self.time_used[self.batch_idx] += self.max_time + self.punish  # 更新当前时间
 
-            self.time_use =tf.stack(self.time_used) / self.max_length  # 时间
+            self.time_use = tf.stack(self.time_used) / self.max_length  # 时间
             self.ns_prob = tf.stack(self.timeout_count) / self.max_length  # 超时率
 
             priority_max = tf.reduce_max(task_priority, axis=0)  # 求每组样本的λ最大值
